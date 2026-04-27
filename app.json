@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "UNI.BUY",
+    "slug": "uni-buy",
+    "version": "1.0.0",
+    "scheme": "unibuy",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "description": "Campus Marketplace - Buy and sell phones, laptops, TVs, and more",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0F6E56"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-router"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.unibuy.electronics"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6C5CE7"
+      },
+      "package": "com.unibuy.electronics"
+    },
+    "web": {}
+  }
+}
