@@ -1,178 +1,132 @@
-# UNI.BUY
+# UNI.BUY - Campus Marketplace App
 
-A peer-to-peer marketplace mobile application for university students in Uganda to buy and sell electronics within their campus communities.
+A React Native marketplace app for university students to buy and sell items on campus.
 
-## 🚀 Features
+## Features
 
-- **Phone-based Authentication** - Secure login with OTP verification
-- **Marketplace Browsing** - Browse 120+ electronics listings
-- **Category Filtering** - Filter by Phones, Laptops, TVs, Tablets, Headphones, Accessories
-- **Search & Filters** - Advanced search with price, condition, and location filters
-- **Post Listings** - Create listings with photos, pricing, and descriptions
-- **Messaging** - Connect with buyers and sellers
-- **User Profiles** - Manage listings, view stats, and ratings
-- **Payment Integration** - MTN Mobile Money, Airtel Money, and Cash on Pickup
-- **Safety Features** - Safety tips and secure transaction guidelines
+✅ **Image Upload** - Upload up to 5 photos when posting listings
+✅ **Search & Filters** - Real-time search with category, condition, and price filters
+✅ **Messaging** - In-app chat to communicate with buyers/sellers
+✅ **Authentication Flow** - Phone verification with OTP
+✅ **Listings** - Browse 120+ mock listings across 8 categories
 
-## 📱 Tech Stack
+## Tech Stack
 
-- **Framework:** React Native (Expo SDK 54)
-- **Navigation:** Expo Router 6.x
-- **Language:** TypeScript
-- **UI:** Material Design 3
-- **Icons:** Ionicons (@expo/vector-icons)
+- **React Native** with Expo
+- **Expo Router** for navigation
+- **TypeScript** for type safety
+- **expo-image** for optimized images
+- **AsyncStorage** for local data persistence
 
-## 🏗️ Project Structure
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Expo CLI
+
+### Installation
+
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Start the development server
+npm start
+
+# Run on iOS
+npm run ios
+
+# Run on Android
+npm run android
+```
+
+## Project Structure
 
 ```
 app/
-├── (tabs)/          # Main app tabs (Home, Sell, Messages, Profile)
-├── auth/            # Authentication flow (Splash, Phone, OTP, Profile, Setup)
-├── listing/         # Listing details
-├── search.tsx       # Search screen
-├── filters.tsx      # Filters modal
-├── post-listing.tsx # Create listing
-├── checkout.tsx     # Payment screen
-└── ...              # Other screens
-
-components/
-├── auth/            # Auth-specific components
-└── shared/          # Reusable components
+├── (tabs)/          # Main tab navigation
+│   ├── index.tsx    # Home feed
+│   ├── messages.tsx # Messages list
+│   ├── profile.tsx  # User profile
+│   └── sell.tsx     # Post listing
+├── auth/            # Authentication screens
+├── chat/[id].tsx    # Individual chat
+├── listing/[id].tsx # Listing details
+└── ...
 
 constants/
-├── colors.ts        # Material Design 3 colors
-├── fonts.ts         # Typography
-└── mockData.ts      # Mock data (120+ listings)
+├── mockData.ts      # Mock data (users, listings, conversations)
+├── colors.ts        # Color palette
+└── fonts.ts         # Typography
+
+utils/
+└── searchListings.ts # Search & filter logic
+
+components/
+├── auth/            # Auth components
+└── shared/          # Reusable components
 ```
 
-## 🛠️ Installation
+## Key Features Implementation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/christianwithit/UNI.BUY.git
-   cd UNI.BUY
-   ```
+### Image Upload
+- Uses `expo-image-picker` for photo selection
+- 5-photo limit with preview
+- Optimized with expo-image
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### Search
+- Real-time filtering by keyword, category, condition, price
+- Recent searches stored in AsyncStorage
+- Pure, testable search utility
 
-3. **Start the development server**
-   ```bash
-   npx expo start
-   ```
+### Messaging
+- Full chat UI with message bubbles
+- 10 mock conversations with message history
+- Keyboard-aware input
+- Navigate from listing → contact → chat
 
-4. **Run on device/emulator**
-   - Press `i` for iOS simulator
-   - Press `a` for Android emulator
-   - Scan QR code with Expo Go app on your phone
+## Development
 
-## 🧪 Testing
+### Best Practices Applied
+- ✅ expo-image instead of React Native Image
+- ✅ Pressable instead of TouchableOpacity
+- ✅ useCallback for stable callbacks
+- ✅ useMemo for derived values
+- ✅ React.memo for list items
+- ✅ Minimal state management
 
-### Mock Credentials
-- **OTP Code:** `123456` (for all phone numbers)
+### Mock Data
+All data is currently mocked in `constants/mockData.ts`:
+- 120 listings across 8 categories
+- 15 mock users
+- 10 conversations with full message history
 
-### Test Flow
-1. Launch app → Splash screen
-2. Tap "Get started" for signup or "Log in" for login
-3. Enter any phone number (Uganda format: +256 7XX XXX XXX)
-4. Enter OTP: `123456`
-5. For signup: Complete profile and university selection
-6. Browse marketplace with 120+ mock listings
+## Next Steps
 
-## 📋 Current Status
+### Backend Integration
+1. Replace mock data with API calls
+2. Implement real-time messaging (WebSocket/Firebase)
+3. Add image upload to cloud storage
+4. Implement user authentication
+5. Add push notifications
 
-**✅ Complete:**
-- All UI screens and navigation
-- Authentication flow (signup & login)
-- Marketplace browsing and filtering
-- Listing creation and details
-- User profiles and messaging UI
-- Payment flow UI
-- Material Design 3 implementation
+### Additional Features
+1. Mark messages as read
+2. Typing indicators
+3. Image messages in chat
+4. Voice messages
+5. Block/report users
+6. Payment integration
 
-**⚠️ In Progress:**
-- Backend integration (Supabase)
-- Real authentication (Twilio/Africa's Talking)
-- Image upload functionality
-- Payment processing (Flutterwave)
-- Real-time messaging
+## Documentation
 
-See [APP_STATUS_REPORT.md](./APP_STATUS_REPORT.md) for detailed status.
+See `IMPLEMENTATION_COMPLETE.md` for detailed implementation notes.
 
-## 🗺️ Roadmap
+## License
 
-### Phase 1: Backend Integration (3 weeks)
-- Set up Supabase
-- Implement phone authentication
-- Database schema and CRUD operations
-- File storage for images
+MIT
 
-### Phase 2: Core Features (3 weeks)
-- Real image upload
-- Real-time messaging
-- Search and filtering logic
-- Favorites and ratings
+## Contact
 
-### Phase 3: Payment Integration (2 weeks)
-- Flutterwave integration
-- MTN Mobile Money API
-- Airtel Money API
-- Transaction history
-
-### Phase 4: Enhanced Features (3 weeks)
-- Push notifications
-- In-app chat
-- Location-based filtering
-- Report/flag system
-
-### Phase 5: Polish & Testing (2 weeks)
-- Error handling
-- Performance optimization
-- Security audit
-- User acceptance testing
-
-**Estimated Timeline to Production:** 10-17 weeks
-
-## 🎨 Design System
-
-### Colors
-- **Primary:** #0F6E56 (Teal Green)
-- **Secondary:** #EF9F27 (Amber)
-- **Background:** #FCF9F8 (Off-white)
-
-### Typography
-- **Headlines:** 26-42px, Bold
-- **Body:** 14-16px, Regular
-- **Captions:** 12-13px, Regular
-
-## 📄 Documentation
-
-- [APP_STATUS_REPORT.md](./APP_STATUS_REPORT.md) - Comprehensive status report for stakeholders
-- [AUTH_FLOW_README.md](./AUTH_FLOW_README.md) - Authentication flow documentation
-- [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Project structure overview
-- [QUICK_START.md](./QUICK_START.md) - Quick start guide
-
-## 🤝 Contributing
-
-This is a private project. For questions or contributions, please contact the development team.
-
-## 📝 License
-
-Copyright © 2024 UNI.BUY. All rights reserved.
-
-## 👥 Team
-
-- **Developer:** Christian Mugisha
-- **Organization:** christianwithit
-
-## 📞 Support
-
-For support or questions, please contact the development team.
-
----
-
-**Version:** 1.0.0 (MVP)  
-**Last Updated:** December 2024  
-**Status:** ✅ MVP Complete - Ready for Backend Integration
+For questions or support, please open an issue.

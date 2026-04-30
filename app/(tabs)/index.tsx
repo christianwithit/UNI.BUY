@@ -1,33 +1,102 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
 import { MOCK_LISTINGS, CATEGORIES } from '../../constants/mockData';
+import { filterListings } from '../../utils/searchListings';
+
+// Memoized list item component for better performance
+const ListingCard = React.memo(({ item, onPress }: { item: any; onPress: (id: string) => void }) => {
+  const handlePress = useCallback(() => {
+    onPress(item.id);
+  }, [item.id, onPress]);
+
+  // Request appropriately-sized image (2x for retina screens)
+  const thumbnailUrl = item.imageUrl 
+    ? `${item.imageUrl}?w=400&h=400&fit=crop&auto=format`
+    : null;
+
+  return (
+    <Pressable style={styles.card} onPress={handlePress}>
+      <View style={styles.cardImageContainer}>
+        {thumbnailUrl ? (
+          <Image
+            source={{ uri: thumbnailUrl }}
+            placeholder={{ blurhash: item.blurhash || 'LGF5]+Yk^6#M@-5c,1J5@[or[Q6.' }}
+            contentFit="cover"
+            transition={200}
+            style={styles.cardImage}
+            cachePolicy="memory-disk"
+            recyclingKey={String(item.id)}
+            priority="normal"
+          />
+        ) : (
+          <View style={styles.cardImagePlaceholder}>
+            <Text style={styles.imagePlaceholder}>📷</Text>
+          </View>
+        )}
+        
+        <Pressable 
+          style={styles.favoriteButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            // TODO: Implement favorite toggle
+          }}
+        >
+          <Ionicons 
+            name={item.isFavorited ? "heart" : "heart-outline"} 
+            size={20} 
+            color={item.isFavorited ? "#EF9F27" : colors.textPrimary}
+          />
+        </Pressable>
+      </View>
+      
+      <View style={styles.cardContent}>
+        <Text style={styles.cardPrice}>UGX {item.price.toLocaleString()}</Text>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <View style={styles.cardFooter}>
+          <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+          <Text style={styles.timeText}>{item.timeAgo}</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+});
 
 export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const router = useRouter();
 
-  // Filter listings based on selected category
-  const filteredListings = selectedCategory === 'All' 
-    ? MOCK_LISTINGS 
-    : MOCK_LISTINGS.filter(listing => listing.category.toLowerCase() === selectedCategory.toLowerCase());
+  // Memoize category list to avoid recreating on every render
+  const categoryList = useMemo(() => ['All', ...CATEGORIES.map(cat => cat.name)], []);
 
-  const categoryList = ['All', ...CATEGORIES.map(cat => cat.name)];
+  // Memoize filtered listings using the search utility
+  const filteredListings = useMemo(() => {
+    return filterListings(MOCK_LISTINGS, { 
+      category: selectedCategory === 'All' ? undefined : selectedCategory 
+    });
+  }, [selectedCategory]);
+
+  const handleListingPress = useCallback((id: string) => {
+    router.push(`/listing/${id}`);
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Top App Bar */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton}>
+        <Pressable style={styles.headerButton}>
           <Ionicons name="menu" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Marketplace</Text>
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.push('/search')}>
+        <Pressable style={styles.headerButton} onPress={() => router.push('/search')}>
           <Ionicons name="search" size={22} color={colors.primary} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -40,9 +109,9 @@ export default function HomeScreen() {
               <Text style={styles.universityName}>Makerere University</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.filterButton} onPress={() => router.push('/filters')}>
+          <Pressable style={styles.filterButton} onPress={() => router.push('/filters')}>
             <Ionicons name="options" size={20} color={colors.textPrimary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Category Pills */}
@@ -53,7 +122,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.categoriesContent}
         >
           {categoryList.map(cat => (
-            <TouchableOpacity
+            <Pressable
               key={cat}
               style={[
                 styles.categoryPill,
@@ -67,38 +136,18 @@ export default function HomeScreen() {
               ]}>
                 {cat}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
 
         {/* Listings Grid */}
         <View style={styles.grid}>
           {filteredListings.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.card}
-              activeOpacity={0.7}
-              onPress={() => router.push(`/listing/${item.id}`)}
-            >
-              <View style={styles.cardImageContainer}>
-                <View style={styles.cardImage}>
-                  <Text style={styles.imagePlaceholder}>📷</Text>
-                </View>
-                <TouchableOpacity style={styles.favoriteButton}>
-                  <Ionicons name="heart-outline" size={20} color={colors.textPrimary} />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardPrice}>UGX {item.price.toLocaleString()}</Text>
-                <Text style={styles.cardTitle} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <View style={styles.cardFooter}>
-                  <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-                  <Text style={styles.timeText}>{item.timeAgo}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+            <ListingCard 
+              key={item.id} 
+              item={item} 
+              onPress={handleListingPress} 
+            />
           ))}
         </View>
       </ScrollView>
@@ -141,6 +190,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingBottom: 80,
   },
   contextSection: {
     flexDirection: 'row',
@@ -208,12 +263,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingBottom: 80,
-  },
   card: {
     width: '48%',
     backgroundColor: '#FFFFFF',
@@ -232,6 +281,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   cardImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  cardImagePlaceholder: {
     width: '100%',
     aspectRatio: 1,
     backgroundColor: '#F0EDED',

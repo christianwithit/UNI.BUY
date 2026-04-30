@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../constants/colors';
 
 const CATEGORIES = ['Phones', 'Laptops', 'TVs', 'Tablets', 'Headphones', 'Accessories'];
@@ -19,21 +21,63 @@ export default function PostListing() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('Like New');
   const [description, setDescription] = useState('');
-  const [photos, setPhotos] = useState<number[]>([1]);
+  const [images, setImages] = useState<string[]>([]);
   const router = useRouter();
 
-  const handlePost = () => {
-    if (title && price && selectedCategory && description) {
-      router.push('/success-posted');
+  // Request permissions on mount
+  React.useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow access to your photo library to upload images.');
+      }
+    })();
+  }, []);
+
+  // Stable callback for picking images
+  const pickImage = useCallback(async () => {
+    if (images.length >= 5) {
+      Alert.alert('Maximum photos reached', 'You can upload up to 5 photos per listing.');
+      return;
     }
-  };
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImages(prev => [...prev, result.assets[0].uri]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  }, [images.length]);
+
+  // Stable callback for removing images
+  const removeImage = useCallback((index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handlePost = useCallback(() => {
+    if (title && price && selectedCategory && description) {
+      // Pass first image to success screen
+      router.push({
+        pathname: '/success-posted',
+        params: { imageUri: images[0] || '' }
+      });
+    }
+  }, [title, price, selectedCategory, description, images, router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()}>
           <Ionicons name="close" size={24} color="#1C1B1B" />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>New Listing</Text>
         <View style={styles.spacer} />
       </View>
@@ -42,23 +86,34 @@ export default function PostListing() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>PHOTOS (UP TO 5)</Text>
-            <Text style={styles.photoCount}>{photos.length} added</Text>
+            <Text style={styles.photoCount}>{images.length} added</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
-            {photos.map((photo, index) => (
-              <View key={index} style={styles.photoCard}>
-                <Text style={styles.photoPlaceholder}>📷</Text>
-                <TouchableOpacity style={styles.removePhoto}>
+            {images.map((uri, index) => (
+              <View key={uri} style={styles.photoCard}>
+                <Image
+                  source={{ uri }}
+                  style={styles.photoImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <Pressable 
+                  style={styles.removePhoto}
+                  onPress={() => removeImage(index)}
+                >
                   <Ionicons name="close" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             ))}
-            <TouchableOpacity style={styles.addPhotoCard}>
-              <Ionicons name="camera" size={28} color={colors.primary} />
-              <Text style={styles.addPhotoText}>Add Photo</Text>
-            </TouchableOpacity>
-            <View style={styles.emptySlot} />
-            <View style={styles.emptySlot} />
+            {images.length < 5 && (
+              <Pressable style={styles.addPhotoCard} onPress={pickImage}>
+                <Ionicons name="camera" size={28} color={colors.primary} />
+                <Text style={styles.addPhotoText}>Add Photo</Text>
+              </Pressable>
+            )}
+            {Array.from({ length: Math.max(0, 5 - images.length - 1) }).map((_, i) => (
+              <View key={`empty-${i}`} style={styles.emptySlot} />
+            ))}
           </ScrollView>
         </View>
 
@@ -92,7 +147,7 @@ export default function PostListing() {
           <Text style={styles.label}>CATEGORY</Text>
           <View style={styles.pillContainer}>
             {CATEGORIES.map(cat => (
-              <TouchableOpacity
+              <Pressable
                 key={cat}
                 style={[
                   styles.pill,
@@ -107,7 +162,7 @@ export default function PostListing() {
                 ]}>
                   {cat}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -116,7 +171,7 @@ export default function PostListing() {
           <Text style={styles.label}>CONDITION</Text>
           <View style={styles.conditionGrid}>
             {CONDITIONS.map(cond => (
-              <TouchableOpacity
+              <Pressable
                 key={cond.label}
                 style={[
                   styles.conditionCard,
@@ -136,7 +191,7 @@ export default function PostListing() {
                 </View>
                 <Text style={styles.conditionLabel}>{cond.label}</Text>
                 <Text style={styles.conditionDesc}>{cond.desc}</Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -157,30 +212,30 @@ export default function PostListing() {
 
         <View style={styles.section}>
           <Text style={styles.label}>MEETUP LOCATION</Text>
-          <TouchableOpacity style={styles.locationSelector}>
+          <Pressable style={styles.locationSelector}>
             <Text style={styles.locationIcon}>📍</Text>
             <View style={styles.locationInfo}>
               <Text style={styles.locationName}>Kampala Central</Text>
               <Text style={styles.locationHint}>Tap to change</Text>
             </View>
             <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.moreButton}>
+        <Pressable style={styles.moreButton}>
           <Text style={styles.moreIcon}>⋯</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           style={[styles.postButton, (!title || !price) && styles.postButtonDisabled]}
           onPress={handlePost}
           disabled={!title || !price}
         >
           <Text style={styles.postButtonText}>Post listing</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -258,6 +313,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    overflow: 'hidden',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
   },
   photoPlaceholder: {
     fontSize: 32,

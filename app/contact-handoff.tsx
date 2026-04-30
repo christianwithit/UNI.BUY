@@ -1,19 +1,38 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
+import { MOCK_CONVERSATIONS, MOCK_LISTINGS } from '../constants/mockData';
 
 export default function ContactHandoff() {
   const router = useRouter();
+  const { listingId } = useLocalSearchParams<{ listingId?: string }>();
+
+  // Find or create conversation for this listing
+  const handleMessageSeller = useCallback(() => {
+    // Find existing conversation for this listing
+    const existingConversation = MOCK_CONVERSATIONS.find(
+      conv => conv.listing.id === Number(listingId)
+    );
+
+    if (existingConversation) {
+      // Navigate to existing conversation
+      router.push(`/chat/${existingConversation.id}`);
+    } else {
+      // In a real app, create a new conversation
+      // For now, navigate to the first conversation as a demo
+      router.push(`/chat/1`);
+    }
+  }, [listingId, router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#1C1B1B" />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Contact Seller</Text>
         <View style={styles.placeholder} />
       </View>
@@ -45,7 +64,7 @@ export default function ContactHandoff() {
         <View style={styles.contactSection}>
           <Text style={styles.contactTitle}>Choose Contact Method</Text>
 
-          <TouchableOpacity style={styles.contactOption}>
+          <Pressable style={styles.contactOption} onPress={handleMessageSeller}>
             <View style={styles.contactIconContainer}>
               <Ionicons name="chatbubbles" size={24} color={colors.primary} />
             </View>
@@ -54,9 +73,9 @@ export default function ContactHandoff() {
               <Text style={styles.contactOptionDescription}>Chat directly in the app</Text>
             </View>
             <Text style={styles.arrow}>›</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={[styles.contactOption, styles.whatsappOption]}>
+          <Pressable style={[styles.contactOption, styles.whatsappOption]}>
             <View style={[styles.contactIconContainer, styles.whatsappIconContainer]}>
               <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
             </View>
@@ -65,9 +84,9 @@ export default function ContactHandoff() {
               <Text style={styles.contactOptionDescription}>Continue on WhatsApp</Text>
             </View>
             <Text style={styles.arrow}>›</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.contactOption}>
+          <Pressable style={styles.contactOption}>
             <View style={styles.contactIconContainer}>
               <Ionicons name="mail" size={24} color={colors.primary} />
             </View>
@@ -76,9 +95,9 @@ export default function ContactHandoff() {
               <Text style={styles.contactOptionDescription}>john.doe@mak.ac.ug</Text>
             </View>
             <Text style={styles.arrow}>›</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.contactOption}>
+          <Pressable style={styles.contactOption}>
             <View style={styles.contactIconContainer}>
               <Ionicons name="call" size={24} color={colors.primary} />
             </View>
@@ -87,7 +106,7 @@ export default function ContactHandoff() {
               <Text style={styles.contactOptionDescription}>+256 7XX XXX XXX</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

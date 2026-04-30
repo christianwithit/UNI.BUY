@@ -1,10 +1,9 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
-  ViewStyle,
 } from 'react-native';
 import { colors } from '../../constants/colors';
 
@@ -49,19 +48,19 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       style={getButtonStyle()}
       onPress={onPress}
       disabled={variant === 'disabled' || loading}
-      activeOpacity={0.7}
     >
       {loading ? (
         <ActivityIndicator color="white" size="small" />
       ) : (
         <Text style={[styles.text, { color: getTextColor() }]}>{label}</Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
+};
 };
 
 const styles = StyleSheet.create({

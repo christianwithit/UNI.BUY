@@ -1,46 +1,69 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '../constants/colors';
 
 export default function Filters() {
   const [priceRange, setPriceRange] = useState([0, 5000000]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCondition, setSelectedCondition] = useState<string>('');
   const router = useRouter();
 
-  const categories = ['Phones', 'Laptops', 'TVs', 'Tablets', 'Headphones', 'Accessories'];
+  const categories = ['Phones', 'Laptops', 'TVs', 'Tablets', 'Headphones', 'Accessories', 'Cameras', 'Gaming'];
   const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
-  const toggleCategory = (cat: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-    );
-  };
+  const toggleCategory = useCallback((cat: string) => {
+    setSelectedCategory(prev => prev === cat ? '' : cat);
+  }, []);
 
-  const toggleCondition = (cond: string) => {
-    setSelectedConditions(prev => 
-      prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
-    );
-  };
+  const toggleCondition = useCallback((cond: string) => {
+    setSelectedCondition(prev => prev === cond ? '' : cond);
+  }, []);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setPriceRange([0, 5000000]);
-    setSelectedCategories([]);
-    setSelectedConditions([]);
-  };
+    setSelectedCategory('');
+    setSelectedCondition('');
+  }, []);
+
+  const handleApply = useCallback(() => {
+    // Build filter params
+    const params: any = {};
+    
+    if (selectedCategory) {
+      params.category = selectedCategory;
+    }
+    
+    if (selectedCondition) {
+      params.condition = selectedCondition;
+    }
+    
+    if (priceRange[0] > 0) {
+      params.minPrice = priceRange[0].toString();
+    }
+    
+    if (priceRange[1] < 5000000) {
+      params.maxPrice = priceRange[1].toString();
+    }
+
+    // Navigate back to search with params
+    router.push({
+      pathname: '/search',
+      params
+    });
+  }, [selectedCategory, selectedCondition, priceRange, router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()}>
           <Text style={styles.headerButton}>Cancel</Text>
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Filters</Text>
-        <TouchableOpacity onPress={handleReset}>
+        <Pressable onPress={handleReset}>
           <Text style={styles.headerButton}>Reset</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView style={styles.content}>
@@ -63,15 +86,15 @@ export default function Filters() {
           <Text style={styles.sectionTitle}>Category</Text>
           <View style={styles.chipContainer}>
             {categories.map(cat => (
-              <TouchableOpacity
+              <Pressable
                 key={cat}
-                style={[styles.chip, selectedCategories.includes(cat) && styles.chipActive]}
+                style={[styles.chip, selectedCategory === cat && styles.chipActive]}
                 onPress={() => toggleCategory(cat)}
               >
-                <Text style={[styles.chipText, selectedCategories.includes(cat) && styles.chipTextActive]}>
+                <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextActive]}>
                   {cat}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -80,39 +103,39 @@ export default function Filters() {
           <Text style={styles.sectionTitle}>Condition</Text>
           <View style={styles.chipContainer}>
             {conditions.map(cond => (
-              <TouchableOpacity
+              <Pressable
                 key={cond}
-                style={[styles.chip, selectedConditions.includes(cond) && styles.chipActive]}
+                style={[styles.chip, selectedCondition === cond && styles.chipActive]}
                 onPress={() => toggleCondition(cond)}
               >
-                <Text style={[styles.chipText, selectedConditions.includes(cond) && styles.chipTextActive]}>
+                <Text style={[styles.chipText, selectedCondition === cond && styles.chipTextActive]}>
                   {cond}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location</Text>
-          <TouchableOpacity style={styles.locationOption}>
+          <Pressable style={styles.locationOption}>
             <Text style={styles.locationText}>Within Campus</Text>
             <View style={styles.checkbox} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.locationOption}>
+          </Pressable>
+          <Pressable style={styles.locationOption}>
             <Text style={styles.locationText}>Nearby (5 miles)</Text>
             <View style={styles.checkbox} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <Pressable 
           style={styles.applyButton}
-          onPress={() => router.back()}
+          onPress={handleApply}
         >
           <Text style={styles.applyButtonText}>Apply Filters</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

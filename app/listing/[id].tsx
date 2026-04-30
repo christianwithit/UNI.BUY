@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
 
 export default function ListingDetails() {
@@ -14,16 +15,16 @@ export default function ListingDetails() {
       {/* Header - Absolute positioned over image */}
       <SafeAreaView style={styles.headerSafeArea} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          </Pressable>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerButton}>
+            <Pressable style={styles.headerButton}>
               <Ionicons name="share-outline" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton}>
+            </Pressable>
+            <Pressable style={styles.headerButton}>
               <Ionicons name="heart-outline" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -81,9 +82,9 @@ export default function ListingDetails() {
                 <Text style={styles.ratingText}>4.8 (24 reviews)</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.viewProfileButton}>
+            <Pressable style={styles.viewProfileButton}>
               <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -104,19 +105,19 @@ export default function ListingDetails() {
 
       {/* Bottom Actions */}
       <View style={styles.bottomActions}>
-        <TouchableOpacity 
+        <Pressable 
           style={styles.contactButton}
-          onPress={() => router.push('/contact-handoff')}
+          onPress={() => router.push(`/contact-handoff?listingId=${id}`)}
         >
           <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" />
           <Text style={styles.contactButtonText}>Contact Seller</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
+        </Pressable>
+        <Pressable 
           style={styles.buyButton}
           onPress={() => router.push('/checkout')}
         >
           <Text style={styles.buyButtonText}>Buy Now</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

@@ -1,23 +1,107 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
-import { MOCK_LISTINGS, CATEGORIES, RECENT_SEARCHES } from '../constants/mockData';
+import { MOCK_LISTINGS, CATEGORIES } from '../constants/mockData';
+import { filterListings } from '../utils/searchListings';
+
+const RECENT_SEARCHES_KEY = '@recent_searches';
+const MAX_RECENT_SEARCHES = 8;
 
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const router = useRouter();
+  const params = useLocalSearchParams();
 
-  const mockResults = MOCK_LISTINGS.slice(0, 6);
+  // Load recent searches on mount
+  useEffect(() => {
+    loadRecentSearches();
+  }, []);
+
+  // Apply filters from params if they exist
+  const filterOptions = useMemo(() => ({
+    query: searchQuery,
+    category: params.category as string,
+    condition: params.condition as string,
+    minPrice: params.minPrice ? Number(params.minPrice) : undefined,
+    maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
+  }), [searchQuery, params]);
+
+  // Real-time filtering
+  const results = useMemo(() => {
+    return filterListings(MOCK_LISTINGS, filterOptions);
+  }, [filterOptions]);
+
+  // Load recent searches from AsyncStorage
+  const loadRecentSearches = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Failed to load recent searches:', error);
+    }
+  };
+
+  // Save search to recent searches
+  const saveRecentSearch = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+
+    try {
+      const trimmed = query.trim();
+      const updated = [
+        trimmed,
+        ...recentSearches.filter(s => s !== trimmed)
+      ].slice(0, MAX_RECENT_SEARCHES);
+      
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+      setRecentSearches(updated);
+    } catch (error) {
+      console.error('Failed to save recent search:', error);
+    }
+  }, [recentSearches]);
+
+  // Handle search query change
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    if (text.trim()) {
+      saveRecentSearch(text);
+    }
+  }, [saveRecentSearch]);
+
+  // Handle recent search tap
+  const handleRecentSearchTap = useCallback((search: string) => {
+    setSearchQuery(search);
+  }, []);
+
+  // Handle category tap
+  const handleCategoryTap = useCallback((categoryName: string) => {
+    router.push({
+      pathname: '/search',
+      params: { category: categoryName }
+    });
+  }, [router]);
+
+  // Handle listing press
+  const handleListingPress = useCallback((id: number) => {
+    router.push(`/listing/${id}`);
+  }, [router]);
+
+  // Show empty state
+  const showEmptyState = searchQuery.trim() && results.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
@@ -25,62 +109,104 @@ export default function Search() {
             placeholder="Search electronics..."
             placeholderTextColor={colors.textSecondary}
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearchChange}
             autoFocus
           />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </Pressable>
+          )}
         </View>
-        <TouchableOpacity onPress={() => router.push('/filters')} style={styles.filterButton}>
+        <Pressable onPress={() => router.push('/filters')} style={styles.filterButton}>
           <Ionicons name="options" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView style={styles.content}>
         {!searchQuery ? (
           <>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Recent Searches</Text>
-              {RECENT_SEARCHES.map((search, index) => (
-                <TouchableOpacity key={index} style={styles.recentItem} onPress={() => setSearchQuery(search)}>
-                  <View style={styles.recentIconContainer}>
-                    <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
-                  </View>
-                  <Text style={styles.recentText}>{search}</Text>
-                  <Ionicons name="arrow-forward" size={18} color={colors.textSecondary} style={{ transform: [{ rotate: '-45deg' }] }} />
-                </TouchableOpacity>
-              ))}
-            </View>
+            {recentSearches.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Recent Searches</Text>
+                {recentSearches.map((search, index) => (
+                  <Pressable 
+                    key={index} 
+                    style={styles.recentItem} 
+                    onPress={() => handleRecentSearchTap(search)}
+                  >
+                    <View style={styles.recentIconContainer}>
+                      <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
+                    </View>
+                    <Text style={styles.recentText}>{search}</Text>
+                    <Ionicons 
+                      name="arrow-forward" 
+                      size={18} 
+                      color={colors.textSecondary} 
+                      style={{ transform: [{ rotate: '-45deg' }] }} 
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Popular Categories</Text>
               <View style={styles.categoryGrid}>
-                {CATEGORIES.map((cat, index) => (
-                  <TouchableOpacity key={index} style={styles.categoryCard}>
+                {CATEGORIES.map((cat) => (
+                  <Pressable 
+                    key={cat.id} 
+                    style={styles.categoryCard}
+                    onPress={() => handleCategoryTap(cat.name)}
+                  >
                     <Text style={styles.categoryIcon}>{cat.icon}</Text>
                     <Text style={styles.categoryName}>{cat.name}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             </View>
           </>
+        ) : showEmptyState ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="search-outline" size={64} color={colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No listings found</Text>
+            <Text style={styles.emptyText}>
+              Try a different keyword or adjust your filters
+            </Text>
+          </View>
         ) : (
           <View style={styles.resultsSection}>
-            <Text style={styles.resultsCount}>{mockResults.length} results found</Text>
+            <Text style={styles.resultsCount}>
+              {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
+            </Text>
             <View style={styles.resultsGrid}>
-              {mockResults.map((item) => (
-                <TouchableOpacity 
+              {results.map((item) => (
+                <Pressable 
                   key={item.id} 
                   style={styles.resultCard}
-                  onPress={() => router.push(`/listing/${item.id}`)}
+                  onPress={() => handleListingPress(item.id)}
                 >
-                  <View style={styles.resultImage}>
-                    <Text style={styles.resultImageIcon}>📷</Text>
+                  <View style={styles.resultImageContainer}>
+                    {item.imageUrl ? (
+                      <Image
+                        source={{ uri: `${item.imageUrl}?w=160&h=160&fit=crop` }}
+                        placeholder={{ blurhash: item.blurhash }}
+                        contentFit="cover"
+                        style={styles.resultImage}
+                        transition={200}
+                      />
+                    ) : (
+                      <View style={styles.resultImagePlaceholder}>
+                        <Text style={styles.resultImageIcon}>📷</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.resultInfo}>
                     <Text style={styles.resultTitle} numberOfLines={2}>{item.title}</Text>
                     <Text style={styles.resultCondition}>{item.condition}</Text>
                     <Text style={styles.resultPrice}>UGX {item.price.toLocaleString()}</Text>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
           </View>
@@ -217,11 +343,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  resultImage: {
+  resultImageContainer: {
     width: 80,
     height: 80,
-    backgroundColor: '#F0EDED',
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  resultImage: {
+    width: '100%',
+    height: '100%',
+  },
+  resultImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F0EDED',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -245,5 +380,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.primary,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1B1B',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6F7A74',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

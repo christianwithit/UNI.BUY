@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/colors';
@@ -7,18 +7,23 @@ import { colors } from '../../constants/colors';
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState('active');
 
-  const myListings = [
+  const myListings = useMemo(() => [
     { id: 1, title: 'iPhone 12', price: 1850000, status: 'Active' },
     { id: 2, title: 'Dell Monitor', price: 550000, status: 'Sold' },
-  ];
+  ], []);
+
+  const filteredListings = useMemo(() => 
+    myListings.filter(item => 
+      activeTab === 'active' ? item.status === 'Active' : item.status === 'Sold'
+    ), [myListings, activeTab]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity>
+        <Pressable>
           <Ionicons name="settings-outline" size={22} color="#1C1B1B" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView style={styles.content}>
@@ -28,9 +33,9 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.name}>John Doe</Text>
           <Text style={styles.university}>Makerere University</Text>
-          <TouchableOpacity style={styles.editButton}>
+          <Pressable style={styles.editButton}>
             <Text style={styles.editButtonText}>Edit Profile</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.statsSection}>
@@ -50,59 +55,57 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <View style={styles.tabContainer}>
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.tab, activeTab === 'active' && styles.tabActive]}
               onPress={() => setActiveTab('active')}
             >
               <Text style={[styles.tabText, activeTab === 'active' && styles.tabTextActive]}>Active</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
+            </Pressable>
+            <Pressable 
               style={[styles.tab, activeTab === 'sold' && styles.tabActive]}
               onPress={() => setActiveTab('sold')}
             >
               <Text style={[styles.tabText, activeTab === 'sold' && styles.tabTextActive]}>Sold</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
-          {myListings
-            .filter(item => activeTab === 'active' ? item.status === 'Active' : item.status === 'Sold')
-            .map(item => (
-              <TouchableOpacity key={item.id} style={styles.listingItem}>
-                <View style={styles.listingImage}>
-                  <Text style={styles.listingImagePlaceholder}>📷</Text>
-                </View>
-                <View style={styles.listingInfo}>
-                  <Text style={styles.listingTitle}>{item.title}</Text>
-                  <Text style={styles.listingPrice}>UGX {item.price.toLocaleString()}</Text>
-                </View>
-                <View style={[styles.statusBadge, item.status === 'Sold' && styles.soldBadge]}>
-                  <Text style={styles.statusText}>{item.status}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+          {filteredListings.map(item => (
+            <Pressable key={item.id} style={styles.listingItem}>
+              <View style={styles.listingImage}>
+                <Text style={styles.listingImagePlaceholder}>📷</Text>
+              </View>
+              <View style={styles.listingInfo}>
+                <Text style={styles.listingTitle}>{item.title}</Text>
+                <Text style={styles.listingPrice}>UGX {item.price.toLocaleString()}</Text>
+              </View>
+              <View style={[styles.statusBadge, item.status === 'Sold' && styles.soldBadge]}>
+                <Text style={styles.statusText}>{item.status}</Text>
+              </View>
+            </Pressable>
+          ))}
         </View>
 
         <View style={styles.section}>
-          <TouchableOpacity style={styles.menuItem}>
+          <Pressable style={styles.menuItem}>
             <Ionicons name="heart-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Favorites</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          </Pressable>
+          <Pressable style={styles.menuItem}>
             <Ionicons name="cube-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Purchase History</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          </Pressable>
+          <Pressable style={styles.menuItem}>
             <Ionicons name="star-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Reviews</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          </Pressable>
+          <Pressable style={styles.menuItem}>
             <Ionicons name="notifications-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Notifications</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

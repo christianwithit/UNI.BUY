@@ -19,13 +19,22 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.unibuy.electronics"
+      "bundleIdentifier": "com.unibuy.electronics",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "UNI.BUY needs access to your photo library to upload product images.",
+        "NSCameraUsageDescription": "UNI.BUY needs access to your camera to take product photos."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#6C5CE7"
       },
-      "package": "com.unibuy.electronics"
+      "package": "com.unibuy.electronics",
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
     },
     "web": {}
   }

@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import {
   View,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
 } from 'react-native';
@@ -23,13 +23,12 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange }) => {
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       style={[
         styles.container,
         isFocused && styles.containerFocused,
       ]}
       onPress={handlePress}
-      activeOpacity={1}
     >
       <View style={styles.leftSection}>
         <Text style={styles.flag}>🇺🇬</Text>
@@ -49,7 +48,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange }) => {
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
       />
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

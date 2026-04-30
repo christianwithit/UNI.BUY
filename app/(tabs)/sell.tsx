@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,20 +66,20 @@ export default function SellScreen() {
           </View>
         </View>
 
-        <TouchableOpacity 
+        <Pressable 
           style={styles.createButton}
           onPress={() => router.push('/post-listing')}
         >
           <Ionicons name="add" size={24} color="#FFFFFF" />
           <Text style={styles.createButtonText}>Create Listing</Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity 
+        <Pressable 
           style={styles.viewListingsButton}
           onPress={() => router.push('/(tabs)/profile')}
         >
           <Text style={styles.viewListingsButtonText}>View My Listings</Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

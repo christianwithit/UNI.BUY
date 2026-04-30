@@ -1,18 +1,69 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/colors';
-import { MOCK_MESSAGES } from '../../constants/mockData';
+import { MOCK_CONVERSATIONS } from '../../constants/mockData';
+
+// Memoized conversation item component
+const ConversationItem = React.memo(({ conversation, onPress }: { conversation: any; onPress: (id: number) => void }) => {
+  const handlePress = useCallback(() => {
+    onPress(conversation.id);
+  }, [conversation.id, onPress]);
+
+  // Get last message from conversation
+  const lastMessage = conversation.messages[conversation.messages.length - 1];
+  const lastMessageText = lastMessage.text;
+  
+  // Calculate time ago
+  const getTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const messageTime = new Date(timestamp);
+    const diffMs = now.getTime() - messageTime.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
+  return (
+    <Pressable style={styles.conversationItem} onPress={handlePress}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{conversation.user.initials}</Text>
+      </View>
+      <View style={styles.conversationContent}>
+        <View style={styles.conversationHeader}>
+          <Text style={styles.conversationName}>{conversation.user.name}</Text>
+          <Text style={styles.conversationTime}>{getTimeAgo(lastMessage.timestamp)}</Text>
+        </View>
+        <Text style={[styles.lastMessage, conversation.unread && styles.unreadMessage]} numberOfLines={1}>
+          {lastMessageText}
+        </Text>
+      </View>
+      {conversation.unread ? <View style={styles.unreadBadge} /> : null}
+    </Pressable>
+  );
+});
 
 export default function MessagesScreen() {
+  const router = useRouter();
+
+  const handleConversationPress = useCallback((id: number) => {
+    router.push(`/chat/${id}`);
+  }, [router]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
       </View>
 
-      <ScrollView style={styles.list}>
+      <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
         <View style={styles.whatsappBanner}>
           <Ionicons name="logo-whatsapp" size={32} color="#25D366" />
           <View style={styles.whatsappContent}>
@@ -21,22 +72,8 @@ export default function MessagesScreen() {
           </View>
         </View>
 
-        {MOCK_MESSAGES.map(conv => (
-          <TouchableOpacity key={conv.id} style={styles.conversationItem}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{conv.user.initials}</Text>
-            </View>
-            <View style={styles.conversationContent}>
-              <View style={styles.conversationHeader}>
-                <Text style={styles.conversationName}>{conv.user.name}</Text>
-                <Text style={styles.conversationTime}>{conv.time}</Text>
-              </View>
-              <Text style={[styles.lastMessage, conv.unread && styles.unreadMessage]}>
-                {conv.lastMessage}
-              </Text>
-            </View>
-            {conv.unread && <View style={styles.unreadBadge} />}
-          </TouchableOpacity>
+        {MOCK_CONVERSATIONS.map(conv => (
+          <ConversationItem key={conv.id} conversation={conv} onPress={handleConversationPress} />
         ))}
       </ScrollView>
     </SafeAreaView>
@@ -65,6 +102,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1C1B1B',
   },
+  list: {
+    flex: 1,
+  },
   whatsappBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -87,9 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6F7A74',
   },
-  list: {
-    flex: 1,
-  },
+
   conversationItem: {
     flexDirection: 'row',
     alignItems: 'center',
