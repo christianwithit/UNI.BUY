@@ -62,7 +62,7 @@ export default function ContactHandoff() {
         </View>
 
         <View style={styles.contactSection}>
-          <Text style={styles.contactTitle}>Choose Contact Method</Text>
+          <Text style={styles.contactTitle}>Contact Seller</Text>
 
           <Pressable style={styles.contactOption} onPress={handleMessageSeller}>
             <View style={styles.contactIconContainer}>
@@ -70,40 +70,7 @@ export default function ContactHandoff() {
             </View>
             <View style={styles.contactContent}>
               <Text style={styles.contactOptionTitle}>Message on UNI.BUY</Text>
-              <Text style={styles.contactOptionDescription}>Chat directly in the app</Text>
-            </View>
-            <Text style={styles.arrow}>›</Text>
-          </Pressable>
-
-          <Pressable style={[styles.contactOption, styles.whatsappOption]}>
-            <View style={[styles.contactIconContainer, styles.whatsappIconContainer]}>
-              <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
-            </View>
-            <View style={styles.contactContent}>
-              <Text style={styles.contactOptionTitle}>WhatsApp</Text>
-              <Text style={styles.contactOptionDescription}>Continue on WhatsApp</Text>
-            </View>
-            <Text style={styles.arrow}>›</Text>
-          </Pressable>
-
-          <Pressable style={styles.contactOption}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="mail" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.contactContent}>
-              <Text style={styles.contactOptionTitle}>Email</Text>
-              <Text style={styles.contactOptionDescription}>john.doe@mak.ac.ug</Text>
-            </View>
-            <Text style={styles.arrow}>›</Text>
-          </Pressable>
-
-          <Pressable style={styles.contactOption}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="call" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.contactContent}>
-              <Text style={styles.contactOptionTitle}>Phone</Text>
-              <Text style={styles.contactOptionDescription}>+256 7XX XXX XXX</Text>
+              <Text style={styles.contactOptionDescription}>Chat directly in the app - safe and secure</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
           </Pressable>

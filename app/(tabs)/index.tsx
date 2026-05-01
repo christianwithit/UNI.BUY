@@ -5,14 +5,24 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
-import { MOCK_LISTINGS, CATEGORIES } from '../../constants/mockData';
+import { MOCK_LISTINGS } from '../../constants/mockData';
 import { filterListings } from '../../utils/searchListings';
+import { useFavorites } from '../../contexts/FavoritesContext';
+import { CategorySelector } from '../../components/shared/CategorySelector';
 
 // Memoized list item component for better performance
 const ListingCard = React.memo(({ item, onPress }: { item: any; onPress: (id: string) => void }) => {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorited = isFavorite(item.id);
+
   const handlePress = useCallback(() => {
     onPress(item.id);
   }, [item.id, onPress]);
+
+  const handleFavoritePress = useCallback((e: any) => {
+    e.stopPropagation();
+    toggleFavorite(item.id);
+  }, [item.id, toggleFavorite]);
 
   // Request appropriately-sized image (2x for retina screens)
   const thumbnailUrl = item.imageUrl 
@@ -41,15 +51,12 @@ const ListingCard = React.memo(({ item, onPress }: { item: any; onPress: (id: st
         
         <Pressable 
           style={styles.favoriteButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            // TODO: Implement favorite toggle
-          }}
+          onPress={handleFavoritePress}
         >
           <Ionicons 
-            name={item.isFavorited ? "heart" : "heart-outline"} 
+            name={favorited ? "heart" : "heart-outline"} 
             size={20} 
-            color={item.isFavorited ? "#EF9F27" : colors.textPrimary}
+            color={favorited ? "#EF9F27" : colors.textPrimary}
           />
         </Pressable>
       </View>
@@ -72,9 +79,6 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const router = useRouter();
 
-  // Memoize category list to avoid recreating on every render
-  const categoryList = useMemo(() => ['All', ...CATEGORIES.map(cat => cat.name)], []);
-
   // Memoize filtered listings using the search utility
   const filteredListings = useMemo(() => {
     return filterListings(MOCK_LISTINGS, { 
@@ -86,13 +90,15 @@ export default function HomeScreen() {
     router.push(`/listing/${id}`);
   }, [router]);
 
+  const handleCategorySelect = useCallback((category: string) => {
+    setSelectedCategory(category);
+  }, []);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Top App Bar */}
       <View style={styles.header}>
-        <Pressable style={styles.headerButton}>
-          <Ionicons name="menu" size={24} color={colors.primary} />
-        </Pressable>
+        <View style={styles.headerButton} />
         <Text style={styles.headerTitle}>Marketplace</Text>
         <Pressable style={styles.headerButton} onPress={() => router.push('/search')}>
           <Ionicons name="search" size={22} color={colors.primary} />
@@ -115,30 +121,12 @@ export default function HomeScreen() {
         </View>
 
         {/* Category Pills */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {categoryList.map(cat => (
-            <Pressable
-              key={cat}
-              style={[
-                styles.categoryPill,
-                selectedCategory === cat && styles.categoryPillActive
-              ]}
-              onPress={() => setSelectedCategory(cat)}
-            >
-              <Text style={[
-                styles.categoryText,
-                selectedCategory === cat && styles.categoryTextActive
-              ]}>
-                {cat}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <CategorySelector
+          selected={selectedCategory}
+          onSelect={handleCategorySelect}
+          variant="pills"
+          includeAll={true}
+        />
 
         {/* Listings Grid */}
         <View style={styles.grid}>
@@ -232,36 +220,6 @@ const styles = StyleSheet.create({
     borderColor: '#BEC9C3',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  categoriesContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  categoriesContent: {
-    paddingBottom: 4,
-  },
-  categoryPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#BEC9C3',
-    marginRight: 8,
-  },
-  categoryPillActive: {
-    backgroundColor: '#0F6E56',
-    borderColor: '#0F6E56',
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#1C1B1B',
-    letterSpacing: 0.12,
-  },
-  categoryTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
   card: {
     width: '48%',

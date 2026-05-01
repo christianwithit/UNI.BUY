@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,13 +64,16 @@ export default function MessagesScreen() {
       </View>
 
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-        <View style={styles.whatsappBanner}>
+        <Pressable 
+          style={styles.whatsappBanner}
+          onPress={() => Linking.openURL('https://wa.me/')}
+        >
           <Ionicons name="logo-whatsapp" size={32} color="#25D366" />
           <View style={styles.whatsappContent}>
             <Text style={styles.whatsappTitle}>Continue on WhatsApp</Text>
             <Text style={styles.whatsappText}>Chat with sellers directly on WhatsApp for faster responses</Text>
           </View>
-        </View>
+        </Pressable>
 
         {MOCK_CONVERSATIONS.map(conv => (
           <ConversationItem key={conv.id} conversation={conv} onPress={handleConversationPress} />

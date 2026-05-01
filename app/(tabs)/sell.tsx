@@ -73,13 +73,6 @@ export default function SellScreen() {
           <Ionicons name="add" size={24} color="#FFFFFF" />
           <Text style={styles.createButtonText}>Create Listing</Text>
         </Pressable>
-
-        <Pressable 
-          style={styles.viewListingsButton}
-          onPress={() => router.push('/(tabs)/profile')}
-        >
-          <Text style={styles.viewListingsButtonText}>View My Listings</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -187,7 +180,6 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.primary,
     borderRadius: 28,
-    marginBottom: 12,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -198,20 +190,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  viewListingsButton: {
-    width: '100%',
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
-  },
-  viewListingsButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
   },
 });

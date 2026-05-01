@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/colors';
 
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState('active');
+  const router = useRouter();
 
   const myListings = useMemo(() => [
     { id: 1, title: 'iPhone 12', price: 1850000, status: 'Active' },
@@ -21,7 +23,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <Pressable>
+        <Pressable onPress={() => router.push('/settings')}>
           <Ionicons name="settings-outline" size={22} color="#1C1B1B" />
         </Pressable>
       </View>
@@ -33,7 +35,10 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.name}>John Doe</Text>
           <Text style={styles.university}>Makerere University</Text>
-          <Pressable style={styles.editButton}>
+          <Pressable 
+            style={styles.editButton}
+            onPress={() => router.push('/edit-profile')}
+          >
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </Pressable>
         </View>
@@ -70,7 +75,7 @@ export default function ProfileScreen() {
           </View>
 
           {filteredListings.map(item => (
-            <Pressable key={item.id} style={styles.listingItem}>
+            <View key={item.id} style={styles.listingItem}>
               <View style={styles.listingImage}>
                 <Text style={styles.listingImagePlaceholder}>📷</Text>
               </View>
@@ -81,27 +86,56 @@ export default function ProfileScreen() {
               <View style={[styles.statusBadge, item.status === 'Sold' && styles.soldBadge]}>
                 <Text style={styles.statusText}>{item.status}</Text>
               </View>
-            </Pressable>
+              <View style={styles.listingActions}>
+                <Pressable 
+                  style={styles.actionButton}
+                  onPress={() => router.push(`/post-listing?edit=${item.id}`)}
+                >
+                  <Ionicons name="create-outline" size={18} color={colors.primary} />
+                </Pressable>
+                <Pressable 
+                  style={styles.actionButton}
+                  onPress={() => {
+                    // In a real app, show confirmation dialog
+                    console.log('Delete listing', item.id);
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </Pressable>
+              </View>
+            </View>
           ))}
         </View>
 
         <View style={styles.section}>
-          <Pressable style={styles.menuItem}>
+          <Pressable 
+            style={styles.menuItem}
+            onPress={() => router.push('/favorites')}
+          >
             <Ionicons name="heart-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Favorites</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
           </Pressable>
-          <Pressable style={styles.menuItem}>
+          <Pressable 
+            style={styles.menuItem}
+            onPress={() => router.push('/purchase-history')}
+          >
             <Ionicons name="cube-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Purchase History</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
           </Pressable>
-          <Pressable style={styles.menuItem}>
+          <Pressable 
+            style={styles.menuItem}
+            onPress={() => router.push('/reviews')}
+          >
             <Ionicons name="star-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Reviews</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
           </Pressable>
-          <Pressable style={styles.menuItem}>
+          <Pressable 
+            style={styles.menuItem}
+            onPress={() => router.push('/notifications')}
+          >
             <Ionicons name="notifications-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Notifications</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
@@ -254,6 +288,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E0D8',
+    gap: 8,
   },
   listingImage: {
     width: 64,
@@ -307,5 +342,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1C1B1B',
     marginLeft: 16,
+  },
+  listingActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0EDED',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

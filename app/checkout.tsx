@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,16 +10,38 @@ export default function Checkout() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const router = useRouter();
 
+  // Validate phone number format
+  const isPhoneValid = useMemo(() => {
+    if (paymentMethod === 'cash') return true;
+    return phoneNumber.length === 9 && /^7\d{8}$/.test(phoneNumber);
+  }, [phoneNumber, paymentMethod]);
+
+  // Check if form is valid
+  const isFormValid = useMemo(() => {
+    if (paymentMethod === 'cash') return true;
+    return isPhoneValid;
+  }, [paymentMethod, isPhoneValid]);
+
   const handlePayment = () => {
+    if (!isFormValid) {
+      Alert.alert(
+        'Invalid Phone Number',
+        'Please enter a valid phone number starting with 7 (9 digits)',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // In real app, process payment here
     router.push('/success-paid');
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#1C1B1B" />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Checkout</Text>
         <View style={styles.placeholder} />
       </View>
@@ -43,7 +65,7 @@ export default function Checkout() {
           <Text style={styles.sectionTitle}>Payment Method</Text>
           <Text style={styles.sectionSubtitle}>Mobile Money</Text>
           
-          <TouchableOpacity 
+          <Pressable 
             style={[styles.paymentOption, paymentMethod === 'mtn' && styles.paymentOptionActive]}
             onPress={() => setPaymentMethod('mtn')}
           >
@@ -54,9 +76,9 @@ export default function Checkout() {
             <View style={[styles.radio, paymentMethod === 'mtn' && styles.radioActive]}>
               {paymentMethod === 'mtn' && <View style={styles.radioDot} />}
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity 
+          <Pressable 
             style={[styles.paymentOption, paymentMethod === 'airtel' && styles.paymentOptionActive]}
             onPress={() => setPaymentMethod('airtel')}
           >
@@ -67,9 +89,9 @@ export default function Checkout() {
             <View style={[styles.radio, paymentMethod === 'airtel' && styles.radioActive]}>
               {paymentMethod === 'airtel' && <View style={styles.radioDot} />}
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity 
+          <Pressable 
             style={[styles.paymentOption, paymentMethod === 'cash' && styles.paymentOptionActive]}
             onPress={() => setPaymentMethod('cash')}
           >
@@ -80,7 +102,7 @@ export default function Checkout() {
             <View style={[styles.radio, paymentMethod === 'cash' && styles.radioActive]}>
               {paymentMethod === 'cash' && <View style={styles.radioDot} />}
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {(paymentMethod === 'mtn' || paymentMethod === 'airtel') && (
@@ -91,7 +113,10 @@ export default function Checkout() {
                 <Text style={styles.countryCodeText}>+256</Text>
               </View>
               <TextInput
-                style={styles.phoneInput}
+                style={[
+                  styles.phoneInput,
+                  phoneNumber.length > 0 && !isPhoneValid && styles.phoneInputError
+                ]}
                 placeholder="7XX XXX XXX"
                 placeholderTextColor="#6F7A74"
                 keyboardType="phone-pad"
@@ -100,6 +125,11 @@ export default function Checkout() {
                 maxLength={9}
               />
             </View>
+            {phoneNumber.length > 0 && !isPhoneValid && (
+              <Text style={styles.errorText}>
+                Phone number must start with 7 and be 9 digits
+              </Text>
+            )}
             <Text style={styles.helperText}>Enter your {paymentMethod === 'mtn' ? 'MTN' : 'Airtel'} Mobile Money number</Text>
           </View>
         )}
@@ -121,9 +151,13 @@ export default function Checkout() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.payButton} onPress={handlePayment}>
+        <Pressable 
+          style={[styles.payButton, !isFormValid && styles.payButtonDisabled]} 
+          onPress={handlePayment}
+          disabled={!isFormValid}
+        >
           <Text style={styles.payButtonText}>Complete Payment</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -280,6 +314,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1C1B1B',
   },
+  phoneInputError: {
+    borderWidth: 2,
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 4,
+    marginBottom: 4,
+  },
   helperText: {
     fontSize: 12,
     color: '#6F7A74',
@@ -333,6 +377,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  payButtonDisabled: {
+    backgroundColor: '#BEC9C3',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   payButtonText: {
     fontSize: 16,

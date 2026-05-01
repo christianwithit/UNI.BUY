@@ -1,14 +1,35 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
+import { MOCK_LISTINGS } from '../../constants/mockData';
+import { useFavorites } from '../../contexts/FavoritesContext';
 
 export default function ListingDetails() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  
+  const listing = MOCK_LISTINGS.find(item => item.id === id);
+  const favorited = isFavorite(id as string);
+
+  const handleShare = async () => {
+    try {
+      const result = await Share.share({
+        message: `Check out this ${listing?.title} for UGX ${listing?.price.toLocaleString()} on UNI.BUY!\n\nCondition: ${listing?.condition}\nLocation: ${listing?.location}\n\nView listing: unibuy://listing/${id}`,
+        title: listing?.title,
+      });
+
+      if (result.action === Share.sharedAction) {
+        console.log('Listing shared');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share listing');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -19,11 +40,18 @@ export default function ListingDetails() {
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
           </Pressable>
           <View style={styles.headerActions}>
-            <Pressable style={styles.headerButton}>
+            <Pressable style={styles.headerButton} onPress={handleShare}>
               <Ionicons name="share-outline" size={22} color="#FFFFFF" />
             </Pressable>
-            <Pressable style={styles.headerButton}>
-              <Ionicons name="heart-outline" size={22} color="#FFFFFF" />
+            <Pressable 
+              style={styles.headerButton}
+              onPress={() => toggleFavorite(id as string)}
+            >
+              <Ionicons 
+                name={favorited ? "heart" : "heart-outline"} 
+                size={22} 
+                color={favorited ? "#EF9F27" : "#FFFFFF"}
+              />
             </Pressable>
           </View>
         </View>
@@ -82,7 +110,10 @@ export default function ListingDetails() {
                 <Text style={styles.ratingText}>4.8 (24 reviews)</Text>
               </View>
             </View>
-            <Pressable style={styles.viewProfileButton}>
+            <Pressable 
+              style={styles.viewProfileButton}
+              onPress={() => router.push(`/seller/john-doe`)}
+            >
               <Ionicons name="chevron-forward" size={20} color={colors.primary} />
             </Pressable>
           </View>

@@ -111,9 +111,6 @@ export default function PostListing() {
                 <Text style={styles.addPhotoText}>Add Photo</Text>
               </Pressable>
             )}
-            {Array.from({ length: Math.max(0, 5 - images.length - 1) }).map((_, i) => (
-              <View key={`empty-${i}`} style={styles.emptySlot} />
-            ))}
           </ScrollView>
         </View>
 
@@ -226,9 +223,6 @@ export default function PostListing() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.moreButton}>
-          <Text style={styles.moreIcon}>⋯</Text>
-        </Pressable>
         <Pressable
           style={[styles.postButton, (!title || !price) && styles.postButtonDisabled]}
           onPress={handlePost}
@@ -530,20 +524,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 16,
     elevation: 8,
-    gap: 16,
-  },
-  moreButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E0D8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moreIcon: {
-    fontSize: 24,
-    color: '#6F7A74',
   },
   postButton: {
     flex: 1,

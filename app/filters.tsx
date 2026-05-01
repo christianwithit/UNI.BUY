@@ -1,20 +1,24 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/colors';
+import { CategorySelector } from '../components/shared/CategorySelector';
 
 export default function Filters() {
-  const [priceRange, setPriceRange] = useState([0, 5000000]);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedCondition, setSelectedCondition] = useState<string>('');
+  const [withinCampus, setWithinCampus] = useState(false);
+  const [nearbyAreas, setNearbyAreas] = useState(false);
   const router = useRouter();
 
-  const categories = ['Phones', 'Laptops', 'TVs', 'Tablets', 'Headphones', 'Accessories', 'Cameras', 'Gaming'];
   const conditions = ['New', 'Like New', 'Good', 'Fair'];
 
-  const toggleCategory = useCallback((cat: string) => {
-    setSelectedCategory(prev => prev === cat ? '' : cat);
+  const handleCategorySelect = useCallback((cat: string) => {
+    setSelectedCategory(cat);
   }, []);
 
   const toggleCondition = useCallback((cond: string) => {
@@ -22,9 +26,12 @@ export default function Filters() {
   }, []);
 
   const handleReset = useCallback(() => {
-    setPriceRange([0, 5000000]);
+    setMinPrice('');
+    setMaxPrice('');
     setSelectedCategory('');
     setSelectedCondition('');
+    setWithinCampus(false);
+    setNearbyAreas(false);
   }, []);
 
   const handleApply = useCallback(() => {
@@ -39,12 +46,18 @@ export default function Filters() {
       params.condition = selectedCondition;
     }
     
-    if (priceRange[0] > 0) {
-      params.minPrice = priceRange[0].toString();
+    if (minPrice) {
+      params.minPrice = minPrice;
     }
     
-    if (priceRange[1] < 5000000) {
-      params.maxPrice = priceRange[1].toString();
+    if (maxPrice) {
+      params.maxPrice = maxPrice;
+    }
+
+    if (withinCampus) {
+      params.location = 'campus';
+    } else if (nearbyAreas) {
+      params.location = 'nearby';
     }
 
     // Navigate back to search with params
@@ -52,7 +65,7 @@ export default function Filters() {
       pathname: '/search',
       params
     });
-  }, [selectedCategory, selectedCondition, priceRange, router]);
+  }, [selectedCategory, selectedCondition, minPrice, maxPrice, withinCampus, nearbyAreas, router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -69,34 +82,46 @@ export default function Filters() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Price Range</Text>
-          <View style={styles.priceRange}>
-            <View style={styles.priceInput}>
-              <Text style={styles.priceLabel}>Min</Text>
-              <Text style={styles.priceValue}>UGX {priceRange[0].toLocaleString()}</Text>
+          <View style={styles.priceInputsContainer}>
+            <View style={styles.priceInputWrapper}>
+              <Text style={styles.priceLabel}>Min Price</Text>
+              <View style={styles.priceInputBox}>
+                <Text style={styles.currency}>UGX</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  placeholder="0"
+                  placeholderTextColor="#BEC9C3"
+                  keyboardType="numeric"
+                  value={minPrice}
+                  onChangeText={setMinPrice}
+                />
+              </View>
             </View>
-            <Text style={styles.priceSeparator}>-</Text>
-            <View style={styles.priceInput}>
-              <Text style={styles.priceLabel}>Max</Text>
-              <Text style={styles.priceValue}>UGX {priceRange[1].toLocaleString()}</Text>
+            <View style={styles.priceInputWrapper}>
+              <Text style={styles.priceLabel}>Max Price</Text>
+              <View style={styles.priceInputBox}>
+                <Text style={styles.currency}>UGX</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  placeholder="5,000,000"
+                  placeholderTextColor="#BEC9C3"
+                  keyboardType="numeric"
+                  value={maxPrice}
+                  onChangeText={setMaxPrice}
+                />
+              </View>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Category</Text>
-          <View style={styles.chipContainer}>
-            {categories.map(cat => (
-              <Pressable
-                key={cat}
-                style={[styles.chip, selectedCategory === cat && styles.chipActive]}
-                onPress={() => toggleCategory(cat)}
-              >
-                <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextActive]}>
-                  {cat}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <CategorySelector
+            selected={selectedCategory}
+            onSelect={handleCategorySelect}
+            variant="chips"
+            includeAll={false}
+          />
         </View>
 
         <View style={styles.section}>
@@ -118,13 +143,29 @@ export default function Filters() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location</Text>
-          <Pressable style={styles.locationOption}>
+          <Pressable 
+            style={styles.locationOption}
+            onPress={() => {
+              setWithinCampus(!withinCampus);
+              if (!withinCampus) setNearbyAreas(false);
+            }}
+          >
             <Text style={styles.locationText}>Within Campus</Text>
-            <View style={styles.checkbox} />
+            <View style={[styles.checkbox, withinCampus && styles.checkboxActive]}>
+              {withinCampus && <Ionicons name="checkmark" size={16} color={colors.primary} />}
+            </View>
           </Pressable>
-          <Pressable style={styles.locationOption}>
+          <Pressable 
+            style={styles.locationOption}
+            onPress={() => {
+              setNearbyAreas(!nearbyAreas);
+              if (!nearbyAreas) setWithinCampus(false);
+            }}
+          >
             <Text style={styles.locationText}>Nearby (5 miles)</Text>
-            <View style={styles.checkbox} />
+            <View style={[styles.checkbox, nearbyAreas && styles.checkboxActive]}>
+              {nearbyAreas && <Ionicons name="checkmark" size={16} color={colors.primary} />}
+            </View>
           </Pressable>
         </View>
       </ScrollView>
@@ -182,31 +223,40 @@ const styles = StyleSheet.create({
     color: '#1C1B1B',
     marginBottom: 16,
   },
-  priceRange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  priceInputsContainer: {
+    gap: 12,
   },
-  priceInput: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#F0EDED',
-    borderRadius: 16,
+  priceInputWrapper: {
+    marginBottom: 12,
   },
   priceLabel: {
     fontSize: 12,
+    fontWeight: '600',
     color: '#6F7A74',
-    marginBottom: 4,
+    marginBottom: 8,
+    letterSpacing: 1,
   },
-  priceValue: {
-    fontSize: 18,
-    fontWeight: '700',
+  priceInputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    backgroundColor: '#F0EDED',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E2E0D8',
+  },
+  currency: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6F7A74',
+    marginRight: 8,
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 16,
     color: '#1C1B1B',
-  },
-  priceSeparator: {
-    fontSize: 20,
-    color: '#6F7A74',
-    marginHorizontal: 16,
+    fontWeight: '600',
   },
   chipContainer: {
     flexDirection: 'row',
@@ -251,6 +301,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
     borderColor: '#BEC9C3',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: '#E8F5F1',
+    borderColor: colors.primary,
   },
   footer: {
     padding: 16,

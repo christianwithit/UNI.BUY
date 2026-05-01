@@ -6,8 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
-import { MOCK_LISTINGS, CATEGORIES } from '../constants/mockData';
+import { MOCK_LISTINGS } from '../constants/mockData';
 import { filterListings } from '../utils/searchListings';
+import { CategorySelector } from '../components/shared/CategorySelector';
 
 const RECENT_SEARCHES_KEY = '@recent_searches';
 const MAX_RECENT_SEARCHES = 8;
@@ -24,6 +25,18 @@ export default function Search() {
   }, []);
 
   // Apply filters from params if they exist
+  const activeFilters = useMemo(() => {
+    const filters: any = {};
+    if (params.category) filters.category = params.category;
+    if (params.condition) filters.condition = params.condition;
+    if (params.minPrice) filters.minPrice = params.minPrice;
+    if (params.maxPrice) filters.maxPrice = params.maxPrice;
+    if (params.location) filters.location = params.location;
+    return filters;
+  }, [params]);
+
+  const hasActiveFilters = Object.keys(activeFilters).length > 0;
+
   const filterOptions = useMemo(() => ({
     query: searchQuery,
     category: params.category as string,
@@ -36,6 +49,21 @@ export default function Search() {
   const results = useMemo(() => {
     return filterListings(MOCK_LISTINGS, filterOptions);
   }, [filterOptions]);
+
+  // Clear all filters
+  const clearFilters = useCallback(() => {
+    router.push('/search');
+  }, [router]);
+
+  // Remove single filter
+  const removeFilter = useCallback((key: string) => {
+    const newParams = { ...params };
+    delete newParams[key];
+    router.push({
+      pathname: '/search',
+      params: newParams
+    });
+  }, [params, router]);
 
   // Load recent searches from AsyncStorage
   const loadRecentSearches = async () => {
@@ -124,6 +152,30 @@ export default function Search() {
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Active Filters */}
+        {hasActiveFilters && (
+          <View style={styles.filtersBar}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+              {Object.entries(activeFilters).map(([key, value]) => (
+                <View key={key} style={styles.filterChip}>
+                  <Text style={styles.filterChipText}>
+                    {key === 'minPrice' ? `Min: ${value}` :
+                     key === 'maxPrice' ? `Max: ${value}` :
+                     key === 'location' ? (value === 'campus' ? 'Campus' : 'Nearby') :
+                     value}
+                  </Text>
+                  <Pressable onPress={() => removeFilter(key)}>
+                    <Ionicons name="close" size={16} color={colors.primary} />
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+            <Pressable onPress={clearFilters} style={styles.clearAllButton}>
+              <Text style={styles.clearAllText}>Clear All</Text>
+            </Pressable>
+          </View>
+        )}
+
         {!searchQuery ? (
           <>
             {recentSearches.length > 0 && (
@@ -152,18 +204,12 @@ export default function Search() {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Popular Categories</Text>
-              <View style={styles.categoryGrid}>
-                {CATEGORIES.map((cat) => (
-                  <Pressable 
-                    key={cat.id} 
-                    style={styles.categoryCard}
-                    onPress={() => handleCategoryTap(cat.name)}
-                  >
-                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                    <Text style={styles.categoryName}>{cat.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              <CategorySelector
+                selected={params.category as string || null}
+                onSelect={handleCategoryTap}
+                variant="cards"
+                includeAll={false}
+              />
             </View>
           </>
         ) : showEmptyState ? (
@@ -263,6 +309,43 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  filtersBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E0D8',
+    gap: 12,
+  },
+  filtersScroll: {
+    flex: 1,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#E8F5F1',
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  clearAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  clearAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
   section: {
     padding: 16,
   },
@@ -291,33 +374,6 @@ const styles = StyleSheet.create({
   recentText: {
     flex: 1,
     fontSize: 16,
-    color: '#1C1B1B',
-  },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  categoryCard: {
-    width: '30%',
-    aspectRatio: 1,
-    backgroundColor: '#F0EDED',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  categoryIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  categoryName: {
-    fontSize: 14,
-    fontWeight: '500',
     color: '#1C1B1B',
   },
   resultsSection: {
