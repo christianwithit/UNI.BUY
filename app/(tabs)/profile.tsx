@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -86,23 +86,32 @@ export default function ProfileScreen() {
               <View style={[styles.statusBadge, item.status === 'Sold' && styles.soldBadge]}>
                 <Text style={styles.statusText}>{item.status}</Text>
               </View>
-              <View style={styles.listingActions}>
-                <Pressable 
-                  style={styles.actionButton}
-                  onPress={() => router.push(`/post-listing?edit=${item.id}`)}
-                >
-                  <Ionicons name="create-outline" size={18} color={colors.primary} />
-                </Pressable>
-                <Pressable 
-                  style={styles.actionButton}
-                  onPress={() => {
-                    // In a real app, show confirmation dialog
-                    console.log('Delete listing', item.id);
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                </Pressable>
-              </View>
+              {item.status === 'Active' && (
+                <View style={styles.listingActions}>
+                  <Pressable 
+                    style={styles.actionButton}
+                    onPress={() => router.push(`/post-listing?edit=${item.id}`)}
+                  >
+                    <Ionicons name="create-outline" size={18} color={colors.primary} />
+                  </Pressable>
+                  <Pressable 
+                    style={styles.actionButton}
+                    onPress={() => {
+                      // In a real app, show confirmation dialog
+                      Alert.alert(
+                        'Delete Listing',
+                        'Are you sure you want to delete this listing?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => console.log('Delete listing', item.id) }
+                        ]
+                      );
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  </Pressable>
+                </View>
+              )}
             </View>
           ))}
         </View>

@@ -17,7 +17,7 @@ export default function FavoritesScreen() {
     [favorites]
   );
 
-  const handleListingPress = useCallback((id: string) => {
+  const handleListingPress = useCallback((id: number) => {
     router.push(`/listing/${id}`);
   }, [router]);
 

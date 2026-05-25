@@ -122,7 +122,7 @@ export default function Search() {
   }, [router]);
 
   // Show empty state
-  const showEmptyState = searchQuery.trim() && results.length === 0;
+  const showEmptyState = (searchQuery.trim() || hasActiveFilters) && results.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -176,7 +176,7 @@ export default function Search() {
           </View>
         )}
 
-        {!searchQuery ? (
+        {!searchQuery && !hasActiveFilters ? (
           <>
             {recentSearches.length > 0 && (
               <View style={styles.section}>
@@ -223,7 +223,7 @@ export default function Search() {
         ) : (
           <View style={styles.resultsSection}>
             <Text style={styles.resultsCount}>
-              {results.length} result{results.length !== 1 ? 's' : ''} for "{searchQuery}"
+              {results.length} result{results.length !== 1 ? 's' : ''}{searchQuery ? ` for "${searchQuery}"` : ''}
             </Text>
             <View style={styles.resultsGrid}>
               {results.map((item) => (

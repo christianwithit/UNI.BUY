@@ -13,14 +13,31 @@ export default function ListingDetails() {
   const { id } = useLocalSearchParams();
   const { isFavorite, toggleFavorite } = useFavorites();
   
-  const listing = MOCK_LISTINGS.find(item => item.id === id);
-  const favorited = isFavorite(id as string);
+  // Convert id to number for lookup
+  const listingId = typeof id === 'string' ? parseInt(id, 10) : Number(id);
+  const listing = MOCK_LISTINGS.find(item => item.id === listingId);
+  const favorited = isFavorite(listingId);
+
+  if (!listing) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backButtonSolid}>
+            <Ionicons name="arrow-back" size={24} color="#1C1B1B" />
+          </Pressable>
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Listing not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleShare = async () => {
     try {
       const result = await Share.share({
-        message: `Check out this ${listing?.title} for UGX ${listing?.price.toLocaleString()} on UNI.BUY!\n\nCondition: ${listing?.condition}\nLocation: ${listing?.location}\n\nView listing: unibuy://listing/${id}`,
-        title: listing?.title,
+        message: `Check out this ${listing.title} for UGX ${listing.price.toLocaleString()} on UNI.BUY!\n\nCondition: ${listing.condition}\nLocation: ${listing.location}\n\nView listing: unibuy://listing/${id}`,
+        title: listing.title,
       });
 
       if (result.action === Share.sharedAction) {
@@ -45,7 +62,7 @@ export default function ListingDetails() {
             </Pressable>
             <Pressable 
               style={styles.headerButton}
-              onPress={() => toggleFavorite(id as string)}
+              onPress={() => toggleFavorite(listingId)}
             >
               <Ionicons 
                 name={favorited ? "heart" : "heart-outline"} 
@@ -75,15 +92,15 @@ export default function ListingDetails() {
         {/* Product Info */}
         <View style={styles.infoSection}>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>Premium Ultra-Slim Laptop 14"</Text>
+            <Text style={styles.title}>{listing.title}</Text>
             <View style={styles.timeRow}>
               <Ionicons name="time-outline" size={14} color="#6F7A74" />
-              <Text style={styles.timeText}>Posted 2 hours ago</Text>
+              <Text style={styles.timeText}>Posted {listing.timeAgo}</Text>
             </View>
           </View>
-          <Text style={styles.price}>UGX 3,200,000</Text>
+          <Text style={styles.price}>UGX {listing.price.toLocaleString()}</Text>
           <View style={styles.conditionBadge}>
-            <Text style={styles.conditionText}>Like New</Text>
+            <Text style={styles.conditionText}>{listing.condition}</Text>
           </View>
         </View>
 
@@ -91,8 +108,7 @@ export default function ListingDetails() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Description</Text>
           <Text style={styles.description}>
-            MacBook Pro M1 2020 in excellent condition. Barely used, comes with original box and charger. 
-            Perfect for students and professionals. Battery health at 95%.
+            {listing.description}
           </Text>
         </View>
 
@@ -101,19 +117,20 @@ export default function ListingDetails() {
           <Text style={styles.sectionTitle}>Seller</Text>
           <View style={styles.sellerCard}>
             <View style={styles.sellerAvatar}>
-              <Text style={styles.sellerAvatarText}>JD</Text>
+              <Text style={styles.sellerAvatarText}>{listing.seller.initials}</Text>
             </View>
             <View style={styles.sellerInfo}>
-              <Text style={styles.sellerName}>John Doe</Text>
+              <Text style={styles.sellerName}>{listing.seller.name}</Text>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={14} color="#EF9F27" />
-                <Text style={styles.ratingText}>4.8 (24 reviews)</Text>
+                <Text style={styles.ratingText}>{listing.seller.rating} ({listing.seller.reviews} reviews)</Text>
               </View>
             </View>
             <Pressable 
               style={styles.viewProfileButton}
-              onPress={() => router.push(`/seller/john-doe`)}
+              onPress={() => router.push(`/seller/${listing.seller.id}`)}
             >
+              <Text style={styles.viewProfileText}>View Profile</Text>
               <Ionicons name="chevron-forward" size={20} color={colors.primary} />
             </Pressable>
           </View>
@@ -125,8 +142,8 @@ export default function ListingDetails() {
           <View style={styles.locationCard}>
             <Ionicons name="location" size={20} color={colors.primary} />
             <View style={styles.locationInfo}>
-              <Text style={styles.locationName}>Makerere University</Text>
-              <Text style={styles.locationDistance}>Campus Center • 0.5 km away</Text>
+              <Text style={styles.locationName}>{listing.seller.university}</Text>
+              <Text style={styles.locationDistance}>{listing.location} • {listing.distance} away</Text>
             </View>
           </View>
         </View>
@@ -137,17 +154,11 @@ export default function ListingDetails() {
       {/* Bottom Actions */}
       <View style={styles.bottomActions}>
         <Pressable 
-          style={styles.contactButton}
+          style={styles.contactButtonFull}
           onPress={() => router.push(`/contact-handoff?listingId=${id}`)}
         >
           <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" />
           <Text style={styles.contactButtonText}>Contact Seller</Text>
-        </Pressable>
-        <Pressable 
-          style={styles.buyButton}
-          onPress={() => router.push('/checkout')}
-        >
-          <Text style={styles.buyButtonText}>Buy Now</Text>
         </Pressable>
       </View>
     </View>
@@ -324,10 +335,14 @@ const styles = StyleSheet.create({
     color: '#3F4944',
   },
   viewProfileButton: {
-    width: 32,
-    height: 32,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+  },
+  viewProfileText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   locationCard: {
     flexDirection: 'row',
@@ -353,7 +368,6 @@ const styles = StyleSheet.create({
   bottomActions: {
     flexDirection: 'row',
     padding: 16,
-    gap: 12,
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -361,7 +375,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  contactButton: {
+  contactButtonFull: {
     flex: 1,
     height: 56,
     flexDirection: 'row',
@@ -370,28 +384,32 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.primary,
     borderRadius: 28,
-  },
-  contactButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  buyButton: {
-    flex: 1,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 28,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  buyButtonText: {
+  contactButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  backButtonSolid: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0EDED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#6F7A74',
   },
 });
