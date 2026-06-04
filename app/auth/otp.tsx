@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../constants/colors';
 import { OtpInput } from '../../components/auth/OtpInput';
 import { ProgressBar } from '../../components/shared/ProgressBar';
@@ -37,13 +38,14 @@ export default function OtpScreen() {
     }
   }, [timer]);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (otp === CORRECT_OTP) {
       // For signup, go to profile creation
-      // For login, go directly to the app
+      // For login, write session and go to app
       if (isSignup) {
         router.push('/auth/profile');
       } else {
+        await AsyncStorage.setItem('unibuy_session', 'authenticated');
         router.replace('/(tabs)/');
       }
     } else {

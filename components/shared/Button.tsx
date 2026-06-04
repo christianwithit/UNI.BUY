@@ -61,7 +61,6 @@ export const Button: React.FC<ButtonProps> = ({
     </Pressable>
   );
 };
-};
 
 const styles = StyleSheet.create({
   button: {

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
 
 export default function SettingsScreen() {
@@ -20,9 +21,9 @@ export default function SettingsScreen() {
         { 
           text: 'Logout', 
           style: 'destructive',
-          onPress: () => {
-            // In real app, clear auth tokens and navigate to login
-            Alert.alert('Success', 'You have been logged out');
+          onPress: async () => {
+            await AsyncStorage.removeItem('unibuy_session');
+            router.replace('/auth/splash');
           }
         },
       ]
@@ -38,8 +39,9 @@ export default function SettingsScreen() {
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Account Deleted', 'Your account has been deleted');
+          onPress: async () => {
+            await AsyncStorage.removeItem('unibuy_session');
+            router.replace('/auth/splash');
           }
         },
       ]
@@ -61,13 +63,13 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>ACCOUNT</Text>
           
-          <Pressable style={styles.menuItem}>
+          <Pressable style={styles.menuItem} onPress={() => router.push('/edit-profile')}>
             <Ionicons name="person-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Edit Profile</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
           </Pressable>
 
-          <Pressable style={styles.menuItem}>
+          <Pressable style={styles.menuItem} onPress={() => router.push('/change-password')}>
             <Ionicons name="lock-closed-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Change Password</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
@@ -151,19 +153,19 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>SUPPORT</Text>
           
-          <Pressable style={styles.menuItem}>
+          <Pressable style={styles.menuItem} onPress={() => router.push('/help-center')}>
             <Ionicons name="help-circle-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Help Center</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
           </Pressable>
 
-          <Pressable style={styles.menuItem}>
+          <Pressable style={styles.menuItem} onPress={() => router.push('/terms')}>
             <Ionicons name="document-text-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Terms of Service</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
           </Pressable>
 
-          <Pressable style={styles.menuItem}>
+          <Pressable style={styles.menuItem} onPress={() => router.push('/privacy')}>
             <Ionicons name="shield-outline" size={22} color="#1C1B1B" />
             <Text style={styles.menuText}>Privacy Policy</Text>
             <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
@@ -174,7 +176,6 @@ export default function SettingsScreen() {
             <Text style={styles.menuText}>About</Text>
             <View style={styles.valueContainer}>
               <Text style={styles.valueText}>v1.0.0</Text>
-              <Ionicons name="chevron-forward" size={20} color="#6F7A74" />
             </View>
           </Pressable>
         </View>

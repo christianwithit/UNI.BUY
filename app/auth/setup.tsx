@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../constants/colors';
 import { ProgressBar } from '../../components/shared/ProgressBar';
 
@@ -47,7 +48,8 @@ export default function SetupScreen() {
     setLocationGranted(true);
   };
 
-  const handleStartBrowsing = () => {
+  const handleStartBrowsing = async () => {
+    await AsyncStorage.setItem('unibuy_session', 'authenticated');
     router.replace('/(tabs)/');
   };
 

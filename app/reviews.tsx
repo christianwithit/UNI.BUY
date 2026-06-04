@@ -131,17 +131,22 @@ export default function ReviewsScreen() {
           </View>
         ) : (
           <View style={styles.reviewsList}>
-            {activeReviews.map(review => (
+            {activeReviews.map(review => {
+              const displayName = activeTab === 'received' 
+                ? ('reviewer' in review ? review.reviewer : '') 
+                : ('seller' in review ? review.seller : '');
+              
+              return (
               <View key={review.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                   <View style={styles.reviewerAvatar}>
                     <Text style={styles.reviewerInitial}>
-                      {(activeTab === 'received' ? review.reviewer : review.seller)[0]}
+                      {displayName[0]}
                     </Text>
                   </View>
                   <View style={styles.reviewerInfo}>
                     <Text style={styles.reviewerName}>
-                      {activeTab === 'received' ? review.reviewer : review.seller}
+                      {displayName}
                     </Text>
                     <View style={styles.starsRow}>
                       {renderStars(review.rating)}
@@ -158,7 +163,8 @@ export default function ReviewsScreen() {
                 <Text style={styles.reviewItem}>Item: {review.item}</Text>
                 <Text style={styles.reviewComment}>{review.comment}</Text>
               </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>

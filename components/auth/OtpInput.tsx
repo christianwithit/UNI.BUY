@@ -94,7 +94,9 @@ export const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, error = fal
       {digits.map((digit, index) => (
         <TextInput
           key={index}
-          ref={(ref) => (inputRefs.current[index] = ref)}
+          ref={(ref) => {
+            inputRefs.current[index] = ref;
+          }}
           style={[
             styles.box,
             error && styles.boxError,

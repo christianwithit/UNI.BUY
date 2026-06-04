@@ -159,10 +159,10 @@ export default function Search() {
               {Object.entries(activeFilters).map(([key, value]) => (
                 <View key={key} style={styles.filterChip}>
                   <Text style={styles.filterChipText}>
-                    {key === 'minPrice' ? `Min: ${value}` :
-                     key === 'maxPrice' ? `Max: ${value}` :
+                    {key === 'minPrice' ? `Min: ${String(value)}` :
+                     key === 'maxPrice' ? `Max: ${String(value)}` :
                      key === 'location' ? (value === 'campus' ? 'Campus' : 'Nearby') :
-                     value}
+                     String(value)}
                   </Text>
                   <Pressable onPress={() => removeFilter(key)}>
                     <Ionicons name="close" size={16} color={colors.primary} />

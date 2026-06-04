@@ -5,29 +5,48 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
-import { MOCK_LISTINGS } from '../../constants/mockData';
+import { MOCK_LISTINGS, MOCK_USERS } from '../../constants/mockData';
 
 export default function SellerProfile() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
-  // Mock seller data (in real app, fetch from API)
-  const seller = useMemo(() => ({
-    id: id as string,
-    name: 'John Doe',
-    university: 'Makerere University',
-    joinedDate: 'January 2024',
-    rating: 4.8,
-    reviewCount: 24,
-    responseTime: '< 1 hour',
-    verifiedStudent: true,
-  }), [id]);
+  // Find seller by ID from mock data
+  const seller = useMemo(() => {
+    const sellerId = typeof id === 'string' ? parseInt(id, 10) : null;
+    return MOCK_USERS.find(user => user.id === sellerId);
+  }, [id]);
 
   // Get seller's listings
-  const sellerListings = useMemo(() => 
-    MOCK_LISTINGS.filter(item => item.seller === seller.name).slice(0, 10),
-    [seller.name]
-  );
+  const sellerListings = useMemo(() => {
+    if (!seller) return [];
+    return MOCK_LISTINGS.filter(item => item.seller.id === seller.id);
+  }, [seller]);
+
+  // If seller not found, show error state
+  if (!seller) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#1C1B1B" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Seller Profile</Text>
+          <View style={styles.placeholder} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="person-outline" size={64} color="#BEC9C3" />
+          <Text style={styles.emptyTitle}>Seller not found</Text>
+          <Text style={styles.emptyText}>
+            The seller you're looking for doesn't exist.
+          </Text>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -45,31 +64,27 @@ export default function SellerProfile() {
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {seller.name.split(' ').map(n => n[0]).join('')}
-            </Text>
+            <Text style={styles.avatarText}>{seller.initials}</Text>
           </View>
           
           <Text style={styles.name}>{seller.name}</Text>
           
-          {seller.verifiedStudent && (
-            <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
-              <Text style={styles.verifiedText}>Verified Student</Text>
-            </View>
-          )}
+          <View style={styles.verifiedBadge}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+            <Text style={styles.verifiedText}>Verified Student</Text>
+          </View>
           
           <Text style={styles.university}>{seller.university}</Text>
-          <Text style={styles.joinedDate}>Member since {seller.joinedDate}</Text>
+          <Text style={styles.joinedDate}>Member since January 2024</Text>
 
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Text style={styles.statValue}>{seller.rating}⭐</Text>
-              <Text style={styles.statLabel}>{seller.reviewCount} reviews</Text>
+              <Text style={styles.statLabel}>{seller.reviews} reviews</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{seller.responseTime}</Text>
+              <Text style={styles.statValue}>{'< 1 hour'}</Text>
               <Text style={styles.statLabel}>Response time</Text>
             </View>
           </View>
@@ -312,10 +327,6 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
   },
-  emptyText: {
-    fontSize: 14,
-    color: '#6F7A74',
-  },
   reviewCard: {
     backgroundColor: '#F0EDED',
     padding: 16,
@@ -378,5 +389,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#EF4444',
+  },
+  placeholder: {
+    width: 24,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1B1B',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6F7A74',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  backButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

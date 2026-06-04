@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -6,15 +6,28 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { colors } from '../constants/colors';
+import { useCurrentUser } from '../contexts/CurrentUserContext';
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const [name, setName] = useState('John Doe');
-  const [email, setEmail] = useState('john.doe@mak.ac.ug');
-  const [phone, setPhone] = useState('+256 7XX XXX XXX');
-  const [university, setUniversity] = useState('Makerere University');
-  const [bio, setBio] = useState('Computer Science student. Selling quality electronics.');
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const { user, setUser } = useCurrentUser();
+  
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [phone, setPhone] = useState(user.phone);
+  const [university, setUniversity] = useState(user.university);
+  const [bio, setBio] = useState(user.bio);
+  const [avatarUri, setAvatarUri] = useState<string | null>(user.avatarUri);
+
+  // Update form when user context changes
+  useEffect(() => {
+    setName(user.name);
+    setEmail(user.email);
+    setPhone(user.phone);
+    setUniversity(user.university);
+    setBio(user.bio);
+    setAvatarUri(user.avatarUri);
+  }, [user]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -41,11 +54,24 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = () => {
-    // In real app, save to backend
+    // Update user in context
+    setUser({
+      ...user,
+      name,
+      email,
+      phone,
+      university,
+      bio,
+      avatarUri,
+    });
+    
     Alert.alert('Success', 'Profile updated successfully', [
       { text: 'OK', onPress: () => router.back() }
     ]);
   };
+
+  // Generate initials from name
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -71,7 +97,7 @@ export default function EditProfileScreen() {
               />
             ) : (
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>JD</Text>
+                <Text style={styles.avatarText}>{initials}</Text>
               </View>
             )}
             <View style={styles.cameraButton}>

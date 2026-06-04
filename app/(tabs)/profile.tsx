@@ -3,21 +3,41 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
+import { useCurrentUser } from '../../contexts/CurrentUserContext';
+import { MOCK_LISTINGS } from '../../constants/mockData';
 
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState('active');
   const router = useRouter();
+  const { user } = useCurrentUser();
 
-  const myListings = useMemo(() => [
-    { id: 1, title: 'iPhone 12', price: 1850000, status: 'Active' },
-    { id: 2, title: 'Dell Monitor', price: 550000, status: 'Sold' },
-  ], []);
+  // Get user's listings from mock data
+  const myListings = useMemo(() => 
+    MOCK_LISTINGS.filter(listing => listing.seller.id === user.id),
+    [user.id]
+  );
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalListings = myListings.length;
+    const soldCount = Math.floor(totalListings * 0.4); // Mock: 40% sold
+    return { totalListings, soldCount };
+  }, [myListings]);
 
   const filteredListings = useMemo(() => 
-    myListings.filter(item => 
-      activeTab === 'active' ? item.status === 'Active' : item.status === 'Sold'
-    ), [myListings, activeTab]);
+    activeTab === 'active' 
+      ? myListings.slice(0, Math.ceil(myListings.length * 0.6)) // Mock: 60% active
+      : myListings.slice(0, Math.floor(myListings.length * 0.4)), // Mock: 40% sold
+    [myListings, activeTab]
+  );
+
+  // Generate initials from name
+  const initials = useMemo(() => 
+    user.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+    [user.name]
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -30,11 +50,19 @@ export default function ProfileScreen() {
 
       <ScrollView style={styles.content}>
         <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>JD</Text>
-          </View>
-          <Text style={styles.name}>John Doe</Text>
-          <Text style={styles.university}>Makerere University</Text>
+          {user.avatarUri ? (
+            <Image
+              source={{ uri: user.avatarUri }}
+              style={styles.avatar}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
+          <Text style={styles.name}>{user.name}</Text>
+          <Text style={styles.university}>{user.university}</Text>
           <Pressable 
             style={styles.editButton}
             onPress={() => router.push('/edit-profile')}
@@ -45,15 +73,15 @@ export default function ProfileScreen() {
 
         <View style={styles.statsSection}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{stats.totalListings}</Text>
             <Text style={styles.statLabel}>Listings</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>8</Text>
+            <Text style={styles.statValue}>{stats.soldCount}</Text>
             <Text style={styles.statLabel}>Sold</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>4.8⭐</Text>
+            <Text style={styles.statValue}>4.9⭐</Text>
             <Text style={styles.statLabel}>Rating</Text>
           </View>
         </View>
@@ -76,17 +104,21 @@ export default function ProfileScreen() {
 
           {filteredListings.map(item => (
             <View key={item.id} style={styles.listingItem}>
-              <View style={styles.listingImage}>
-                <Text style={styles.listingImagePlaceholder}>📷</Text>
-              </View>
+              <Image
+                source={{ uri: `${item.imageUrl}?w=128&h=128&fit=crop` }}
+                placeholder={{ blurhash: item.blurhash }}
+                contentFit="cover"
+                style={styles.listingImage}
+                cachePolicy="memory-disk"
+              />
               <View style={styles.listingInfo}>
                 <Text style={styles.listingTitle}>{item.title}</Text>
                 <Text style={styles.listingPrice}>UGX {item.price.toLocaleString()}</Text>
               </View>
-              <View style={[styles.statusBadge, item.status === 'Sold' && styles.soldBadge]}>
-                <Text style={styles.statusText}>{item.status}</Text>
+              <View style={[styles.statusBadge, activeTab === 'sold' && styles.soldBadge]}>
+                <Text style={styles.statusText}>{activeTab === 'active' ? 'Active' : 'Sold'}</Text>
               </View>
-              {item.status === 'Active' && (
+              {activeTab === 'active' && (
                 <View style={styles.listingActions}>
                   <Pressable 
                     style={styles.actionButton}
@@ -97,7 +129,6 @@ export default function ProfileScreen() {
                   <Pressable 
                     style={styles.actionButton}
                     onPress={() => {
-                      // In a real app, show confirmation dialog
                       Alert.alert(
                         'Delete Listing',
                         'Are you sure you want to delete this listing?',
@@ -302,10 +333,7 @@ const styles = StyleSheet.create({
   listingImage: {
     width: 64,
     height: 64,
-    backgroundColor: '#F0EDED',
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 12,
   },
   listingImagePlaceholder: {
