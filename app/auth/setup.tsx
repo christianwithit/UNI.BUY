@@ -7,13 +7,15 @@ import {
   Modal,
   FlatList,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../constants/colors';
 import { ProgressBar } from '../../components/shared/ProgressBar';
+import { supabase } from '../../lib/supabase';
 
 const universities = [
   'Makerere University',
@@ -33,9 +35,11 @@ const universities = [
 
 export default function SetupScreen() {
   const router = useRouter();
+  const { phone } = useLocalSearchParams<{ phone?: string }>();
   const [selectedUniversity, setSelectedUniversity] = useState('');
   const [showUniversityModal, setShowUniversityModal] = useState(false);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const isValid = selectedUniversity !== '';
 
@@ -49,8 +53,45 @@ export default function SetupScreen() {
   };
 
   const handleStartBrowsing = async () => {
-    await AsyncStorage.setItem('unibuy_session', 'authenticated');
-    router.replace('/(tabs)/');
+    if (!isValid || saving) return;
+
+    setSaving(true);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        Alert.alert('Error', 'Please log in again.');
+        router.replace('/auth/splash');
+        return;
+      }
+
+      // Create profile in database
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          phone: phone || user.phone,
+          university: selectedUniversity,
+          name: 'User', // Placeholder - will be updated in edit profile
+          join_date: new Date().toISOString(),
+        });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        Alert.alert('Error', 'Failed to create profile. Please try again.');
+        setSaving(false);
+        return;
+      }
+
+      // Success - navigate to main app
+      router.replace('/(tabs)/');
+    } catch (error) {
+      console.error('Setup error:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+      setSaving(false);
+    }
   };
 
   return (
@@ -146,12 +187,16 @@ export default function SetupScreen() {
 
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.button, isValid && styles.buttonActive]}
+          style={[styles.button, isValid && !saving && styles.buttonActive]}
           onPress={handleStartBrowsing}
-          disabled={!isValid}
+          disabled={!isValid || saving}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Start browsing →</Text>
+          {saving ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={styles.buttonText}>Start browsing →</Text>
+          )}
         </TouchableOpacity>
       </View>
 

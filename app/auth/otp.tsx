@@ -6,16 +6,16 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../constants/colors';
 import { OtpInput } from '../../components/auth/OtpInput';
 import { ProgressBar } from '../../components/shared/ProgressBar';
-
-const CORRECT_OTP = '123456';
+import { supabase } from '../../lib/supabase';
+import { formatPhoneForDisplay } from '../../utils/phone';
 
 export default function OtpScreen() {
   const router = useRouter();
@@ -24,6 +24,7 @@ export default function OtpScreen() {
   const [error, setError] = useState(false);
   const [timer, setTimer] = useState(59);
   const [canResend, setCanResend] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const isSignup = mode === 'signup';
 
@@ -38,26 +39,87 @@ export default function OtpScreen() {
     }
   }, [timer]);
 
+  // Auto-verify when OTP is complete
+  useEffect(() => {
+    if (otp.length === 6 && !verifying) {
+      handleVerify();
+    }
+  }, [otp]);
+
   const handleVerify = async () => {
-    if (otp === CORRECT_OTP) {
-      // For signup, go to profile creation
-      // For login, write session and go to app
-      if (isSignup) {
-        router.push('/auth/profile');
+    if (otp.length < 6 || verifying) return;
+
+    setVerifying(true);
+    setError(false);
+
+    try {
+      // Verify OTP with Supabase
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        phone: phone,
+        token: otp,
+        type: 'sms',
+      });
+
+      if (verifyError) {
+        setError(true);
+        setVerifying(false);
+        Alert.alert('Invalid Code', 'The code you entered is incorrect. Please try again.');
+        return;
+      }
+
+      if (!data.user) {
+        setError(true);
+        setVerifying(false);
+        Alert.alert('Error', 'Verification failed. Please try again.');
+        return;
+      }
+
+      // Check if profile exists
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        // PGRST116 = not found, which is expected for new users
+        console.error('Profile check error:', profileError);
+      }
+
+      // If no profile exists, go to setup
+      if (!profile) {
+        router.replace(`/auth/setup?phone=${encodeURIComponent(phone)}`);
       } else {
-        await AsyncStorage.setItem('unibuy_session', 'authenticated');
+        // Profile exists, go to main app
         router.replace('/(tabs)/');
       }
-    } else {
+    } catch (error) {
       setError(true);
-      setTimeout(() => setError(false), 300);
+      setVerifying(false);
+      Alert.alert('Error', 'Verification failed. Please try again.');
+      console.error('Verify OTP error:', error);
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setTimer(59);
     setCanResend(false);
-    // Show toast or feedback
+    setOtp('');
+    
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phone,
+      });
+
+      if (error) {
+        Alert.alert('Error', 'Failed to resend code. Please try again.');
+      } else {
+        Alert.alert('Success', 'A new code has been sent to your phone.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to resend code. Please try again.');
+      console.error('Resend OTP error:', error);
+    }
   };
 
   const formatTime = (seconds: number) => {

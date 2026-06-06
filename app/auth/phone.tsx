@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -14,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/colors';
 import { PhoneInput } from '../../components/auth/PhoneInput';
 import { ProgressBar } from '../../components/shared/ProgressBar';
+import { supabase } from '../../lib/supabase';
+import { formatPhoneForAuth } from '../../utils/phone';
 
 export default function PhoneScreen() {
   const router = useRouter();
@@ -28,11 +31,30 @@ export default function PhoneScreen() {
     if (!isValid) return;
 
     setLoading(true);
-    // Simulate sending OTP
-    setTimeout(() => {
+    
+    try {
+      // Format phone to E.164 format (+256XXXXXXXXX)
+      const formattedPhone = formatPhoneForAuth(phone);
+      
+      // Send OTP via Supabase
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
+
+      if (error) {
+        Alert.alert('Error', error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Success - navigate to OTP screen
+      router.push(`/auth/otp?phone=${encodeURIComponent(formattedPhone)}&mode=${mode}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send code. Please try again.');
+      console.error('Send OTP error:', error);
+    } finally {
       setLoading(false);
-      router.push(`/auth/otp?phone=${phone}&mode=${mode}`);
-    }, 1500);
+    }
   };
 
   return (

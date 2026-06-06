@@ -11,11 +11,25 @@ import { MOCK_LISTINGS } from '../../constants/mockData';
 export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState('active');
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const { user, loading } = useCurrentUser();
+
+  // Show loading state while user data is being fetched
+  if (loading || !user) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Get user's listings from mock data
   const myListings = useMemo(() => 
-    MOCK_LISTINGS.filter(listing => listing.seller.id === user.id),
+    MOCK_LISTINGS.filter(listing => listing.seller.id === parseInt(user.id)),
     [user.id]
   );
 
@@ -50,9 +64,9 @@ export default function ProfileScreen() {
 
       <ScrollView style={styles.content}>
         <View style={styles.profileSection}>
-          {user.avatarUri ? (
+          {user.avatar_url ? (
             <Image
-              source={{ uri: user.avatarUri }}
+              source={{ uri: user.avatar_url }}
               style={styles.avatar}
               contentFit="cover"
             />
@@ -207,6 +221,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#1C1B1B',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FCF9F8',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6F7A74',
   },
   content: {
     flex: 1,

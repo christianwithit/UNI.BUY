@@ -3,8 +3,8 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
+import { supabase } from '../lib/supabase';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -22,8 +22,13 @@ export default function SettingsScreen() {
           text: 'Logout', 
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem('unibuy_session');
-            router.replace('/auth/splash');
+            try {
+              await supabase.auth.signOut();
+              router.replace('/auth/splash');
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           }
         },
       ]
@@ -40,8 +45,15 @@ export default function SettingsScreen() {
           text: 'Delete', 
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem('unibuy_session');
-            router.replace('/auth/splash');
+            try {
+              // Sign out (in a real app, you'd also delete the user account)
+              await supabase.auth.signOut();
+              router.replace('/auth/splash');
+              // TODO: Implement actual account deletion via Supabase admin API
+            } catch (error) {
+              console.error('Delete account error:', error);
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+            }
           }
         },
       ]

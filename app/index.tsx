@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Redirect } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
+import { supabase } from '../lib/supabase';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,8 +14,14 @@ export default function Index() {
 
   const checkSession = async () => {
     try {
-      const session = await AsyncStorage.getItem('unibuy_session');
-      setHasSession(session === 'authenticated');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Session check error:', error);
+        setHasSession(false);
+      } else {
+        setHasSession(!!session);
+      }
     } catch (error) {
       console.error('Error checking session:', error);
       setHasSession(false);
