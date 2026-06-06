@@ -1,17 +1,35 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { colors } from '../../constants/colors';
-import { MOCK_LISTINGS } from '../../constants/mockData';
-import { filterListings } from '../../utils/searchListings';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { CategorySelector } from '../../components/shared/CategorySelector';
+import { supabase } from '../../lib/supabase';
+import { ListingWithDetails } from '../../types/database';
+
+// Helper function to calculate time ago
+function getTimeAgo(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks}w ago`;
+  return `${Math.floor(weeks / 4)}mo ago`;
+}
 
 // Memoized list item component for better performance
-const ListingCard = React.memo(({ item, onPress }: { item: any; onPress: (id: string) => void }) => {
+const ListingCard = React.memo(({ item, onPress }: { item: ListingWithDetails; onPress: (id: number) => void }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(item.id);
 
@@ -24,18 +42,15 @@ const ListingCard = React.memo(({ item, onPress }: { item: any; onPress: (id: st
     toggleFavorite(item.id);
   }, [item.id, toggleFavorite]);
 
-  // Request appropriately-sized image (2x for retina screens)
-  const thumbnailUrl = item.imageUrl 
-    ? `${item.imageUrl}?w=400&h=400&fit=crop&auto=format`
-    : null;
+  // Get first image or use placeholder
+  const imageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
 
   return (
     <Pressable style={styles.card} onPress={handlePress}>
       <View style={styles.cardImageContainer}>
-        {thumbnailUrl ? (
+        {imageUrl ? (
           <Image
-            source={{ uri: thumbnailUrl }}
-            placeholder={{ blurhash: item.blurhash || 'LGF5]+Yk^6#M@-5c,1J5@[or[Q6.' }}
+            source={{ uri: imageUrl }}
             contentFit="cover"
             transition={200}
             style={styles.cardImage}
@@ -68,7 +83,7 @@ const ListingCard = React.memo(({ item, onPress }: { item: any; onPress: (id: st
         </Text>
         <View style={styles.cardFooter}>
           <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.timeText}>{item.timeAgo}</Text>
+          <Text style={styles.timeText}>{getTimeAgo(item.created_at)}</Text>
         </View>
       </View>
     </Pressable>
@@ -77,16 +92,57 @@ const ListingCard = React.memo(({ item, onPress }: { item: any; onPress: (id: st
 
 export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [listings, setListings] = useState<ListingWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
-  // Memoize filtered listings using the search utility
-  const filteredListings = useMemo(() => {
-    return filterListings(MOCK_LISTINGS, { 
-      category: selectedCategory === 'All' ? undefined : selectedCategory 
-    });
+  // Fetch listings from Supabase
+  const fetchListings = useCallback(async () => {
+    try {
+      let query = supabase
+        .from('listings')
+        .select(`
+          *,
+          seller:profiles(*),
+          category:categories(*)
+        `)
+        .eq('status', 'Active')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      // Filter by category if not "All"
+      if (selectedCategory !== 'All') {
+        query = query.eq('category.slug', selectedCategory.toLowerCase());
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching listings:', error);
+        return;
+      }
+
+      setListings(data as ListingWithDetails[]);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [selectedCategory]);
 
-  const handleListingPress = useCallback((id: string) => {
+  // Load listings on mount and when category changes
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchListings();
+  }, [fetchListings]);
+
+  const handleListingPress = useCallback((id: number) => {
     router.push(`/listing/${id}`);
   }, [router]);
 
@@ -105,7 +161,13 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {/* Context Section */}
         <View style={styles.contextSection}>
           <View>
@@ -128,16 +190,29 @@ export default function HomeScreen() {
           includeAll={true}
         />
 
-        {/* Listings Grid */}
-        <View style={styles.grid}>
-          {filteredListings.map(item => (
-            <ListingCard 
-              key={item.id} 
-              item={item} 
-              onPress={handleListingPress} 
-            />
-          ))}
-        </View>
+        {/* Loading State */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading listings...</Text>
+          </View>
+        ) : listings.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No listings found</Text>
+            <Text style={styles.emptySubtext}>Try a different category</Text>
+          </View>
+        ) : (
+          /* Listings Grid */
+          <View style={styles.grid}>
+            {listings.map(item => (
+              <ListingCard 
+                key={item.id} 
+                item={item} 
+                onPress={handleListingPress} 
+              />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -178,6 +253,31 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  emptyContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
   },
   grid: {
     flexDirection: 'row',
